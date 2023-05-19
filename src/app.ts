@@ -1,6 +1,6 @@
-const env = require("./env");
+import env from "./env";
 
-const { App } = require("@slack/bolt");
+import { App } from "@slack/bolt";
 
 const app = new App({
   token: env.SLACK_BOT_TOKEN,

@@ -1,13 +1,17 @@
 {
   "name": "muffin",
   "version": "0.0.1",
-  "main": "src/app.js",
+  "license": "MIT",
+  "main": "dist/app.js",
   "scripts": {
-    "start": "node src/app.js"
+    "build": "rm -rf dist && mkdir -p dist && tsc",
+    "start": "node dist/app.js"
   },
   "dependencies": {
     "@slack/bolt": "^3.13.1",
     "dotenv": "^16.0.3"
   },
-  "license": "MIT"
+  "devDependencies": {
+    "typescript": "^5.0.4"
+  }
 }

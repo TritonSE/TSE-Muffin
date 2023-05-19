@@ -1,4 +1,4 @@
-require("dotenv").config();
+import "dotenv/config";
 
 /**
  * @returns {number}
@@ -20,4 +20,4 @@ const env = {
   SLACK_SIGNING_SECRET: process.env.SLACK_SIGNING_SECRET,
 };
 
-module.exports = env;
+export default env;
