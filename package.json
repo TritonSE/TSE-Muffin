@@ -1,0 +1,13 @@
+{
+  "name": "muffin",
+  "version": "0.0.1",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js"
+  },
+  "dependencies": {
+    "@slack/bolt": "^3.13.1",
+    "dotenv": "^16.0.3"
+  },
+  "license": "MIT"
+}
