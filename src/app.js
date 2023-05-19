@@ -14,6 +14,7 @@ app.event("app_mention", async ({ event, say }) => {
 
 async function main() {
   await app.start();
+  console.log(`Running on port ${env.PORT}`);
 }
 
 main();
