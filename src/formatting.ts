@@ -3,7 +3,7 @@ function formatChannel(channel: string): string {
 }
 
 function parseChannel(channel: string): string {
-  const match = /<#([0-9A-Z]+)>/.exec(channel);
+  const match = /<#([0-9A-Z]+)([|][^>]*)?>/.exec(channel);
   return match !== null ? match[1] : channel;
 }
 
