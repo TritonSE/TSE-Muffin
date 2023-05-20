@@ -1,6 +1,10 @@
 import env from "./env";
 
-import { App } from "@slack/bolt";
+import { AllMiddlewareArgs, App, SlackEventMiddlewareArgs } from "@slack/bolt";
+import { addReaction, getBotUserId } from "./wrappers";
+import { shell } from "./shell";
+import { formatUser } from "./formatting";
+import { runCommand } from "./commands";
 
 const app = new App({
   token: env.SLACK_BOT_TOKEN,
@@ -8,13 +12,70 @@ const app = new App({
   port: env.PORT,
 });
 
-app.event("app_mention", async ({ event, say }) => {
-  say(`Hello world! <@${event.user}> said: ${event.text}`);
+async function processCommandMessage(
+  text: string,
+  context: SlackEventMiddlewareArgs<"app_mention" | "message"> &
+    AllMiddlewareArgs
+) {
+  const { event, say } = context;
+
+  const result = await runCommand(text, app, context);
+  const reply: string | null = result.ok ? result.value : result.error;
+
+  const promises: Promise<unknown>[] = [
+    addReaction(
+      app,
+      event.channel,
+      event.ts,
+      result.ok ? "white_check_mark" : "x"
+    ),
+  ];
+
+  if (reply !== null) {
+    promises.push(say(reply));
+  }
+
+  await Promise.allSettled(promises);
+}
+
+app.event("app_mention", async (context) => {
+  const botMention = formatUser(await getBotUserId(app));
+  let text = context.event.text.trimStart();
+  if (!text.startsWith(botMention)) {
+    // Don't respond to messages that don't start with a mention.
+    // TODO: use postEphemeral to send a hint to the user?
+    return;
+  }
+
+  // Remove the mention.
+  text = text.substring(botMention.length);
+
+  await processCommandMessage(text, context);
+});
+
+app.message(async (context) => {
+  const { message } = context;
+  if (
+    message.channel_type === "im" &&
+    message.subtype === undefined &&
+    message.text !== undefined
+  ) {
+    await processCommandMessage(message.text, context);
+  }
+});
+
+app.error(async (error) => {
+  console.error(error);
 });
 
 async function main() {
   await app.start();
-  console.log(`Running on port ${env.PORT}`);
+  console.log(`port: ${env.PORT}`);
+
+  const botUserId = await getBotUserId(app);
+  console.log(`bot user ID: ${botUserId}`);
+
+  shell(app);
 }
 
 main();
