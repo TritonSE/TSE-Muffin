@@ -11,8 +11,4 @@ function formatUser(user: string): string {
   return `<@${user}>`;
 }
 
-export {
-  formatChannel,
-  parseChannel,
-  formatUser,
-}
+export { formatChannel, parseChannel, formatUser };

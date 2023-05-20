@@ -1,10 +1,10 @@
-import env from "./env";
-
 import { AllMiddlewareArgs, App, SlackEventMiddlewareArgs } from "@slack/bolt";
-import { addReaction, getBotUserId } from "./wrappers";
-import { shell } from "./shell";
-import { formatUser } from "./formatting";
+
 import { runCommand } from "./commands";
+import env from "./env";
+import { formatUser } from "./formatting";
+import { shell } from "./shell";
+import { addReaction, getBotUserId } from "./wrappers";
 
 const app = new App({
   token: env.SLACK_BOT_TOKEN,
@@ -82,7 +82,7 @@ async function main() {
   const botUserId = await getBotUserId(app);
   console.log(`bot user ID: ${botUserId}`);
 
-  shell(app);
+  shell(app).catch(console.error);
 }
 
-main();
+main().catch(console.error);

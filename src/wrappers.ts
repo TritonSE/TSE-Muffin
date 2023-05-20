@@ -17,11 +17,7 @@ async function getBotUserId(app: App): Promise<string> {
   }
 
   console.error(response);
-  if (!response.ok) {
-    throw new Error(`auth.test failed: ${response.error}`);
-  } else {
-    throw new Error("auth.test response has no user_id");
-  }
+  throw new Error("auth.test failed");
 }
 
 async function getConversationMembers(
@@ -32,32 +28,29 @@ async function getConversationMembers(
 
   let cursor: string | undefined = undefined;
 
-  while (true) {
+  do {
     let response: Awaited<ReturnType<typeof app.client.conversations.members>>;
     try {
       response = await app.client.conversations.members({
         channel,
         cursor,
       });
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
-      response = e.data;
+      // eslint-disable-next-line
+      response = (e as any).data;
     }
 
     if (!response.ok) {
-      return Result.Err(response.error || "unknown error");
+      return Result.Err(response.error ?? "unknown error");
     }
 
     if (response.members) {
       members.push(...response.members);
     }
 
-    const nextCursor = response.response_metadata?.next_cursor;
-    if (!nextCursor) {
-      break;
-    }
-    cursor = nextCursor;
-  }
+    cursor = response.response_metadata?.next_cursor;
+  } while (cursor);
 
   return Result.Ok(members);
 }
@@ -75,13 +68,14 @@ async function addReaction(
       timestamp,
       name,
     });
-  } catch (e: any) {
+  } catch (e) {
     console.error(e);
-    response = e.data;
+    // eslint-disable-next-line
+    response = (e as any).data;
   }
 
   if (!response.ok) {
-    return Result.Err(response.error || "unknown error");
+    return Result.Err(response.error ?? "unknown error");
   }
 
   return Result.Ok(undefined);

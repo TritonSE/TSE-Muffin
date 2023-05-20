@@ -1,6 +1,8 @@
-import { App } from "@slack/bolt";
-import * as readline from "node:readline/promises";
 import { stdin, stdout } from "node:process";
+import { promises as readline } from "node:readline";
+
+import { App } from "@slack/bolt";
+
 import { runCommand } from "./commands";
 import { Result } from "./result";
 
@@ -14,7 +16,9 @@ async function shell(app: App) {
 
   setBlankPrompt();
 
-  console.log("shell: welcome to muffin interactive shell! (use `help` for help)")
+  console.log(
+    "shell: welcome to muffin interactive shell! (use `help` for help)"
+  );
   rl.prompt();
 
   for await (const line of rl) {

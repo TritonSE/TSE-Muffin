@@ -1,8 +1,8 @@
 import { App, SlackEventMiddlewareArgs } from "@slack/bolt";
 
+import { formatChannel, parseChannel } from "./formatting";
 import { Result } from "./result";
 import { addReaction, getConversationMembers } from "./wrappers";
-import { formatChannel, parseChannel } from "./formatting";
 
 type CommandContext = SlackEventMiddlewareArgs<"app_mention" | "message">;
 
@@ -39,7 +39,7 @@ class HelpCommand extends Command {
     }
 
     let errored = false;
-    let lines = [];
+    const lines: string[] = [];
     for (const command of commands) {
       const cls = commandClassesById[command];
       if (cls === undefined) {
@@ -135,7 +135,7 @@ class ReactCommand extends Command {
     }
     const [channel, timestamp, ...reactions] = this.args;
 
-    const lines = [];
+    const lines: string[] = [];
     for (const reaction of reactions) {
       const result = await addReaction(this.app, channel, timestamp, reaction);
 
@@ -165,9 +165,11 @@ async function runCommand(
   app: App,
   context: CommandContext | null
 ): Promise<Result<string | null, string>> {
+  const tryHelp = "(try `help`)";
+
   const tokens = line.split(/\s+/).filter((t) => t.length > 0);
   if (tokens.length < 1) {
-    return Result.Err("shell: no command specified (try `help`)");
+    return Result.Err(`shell: no command specified ${tryHelp}`);
   }
 
   const id = tokens[0];
@@ -175,7 +177,7 @@ async function runCommand(
 
   const cls = commandClassesById[id];
   if (cls === undefined) {
-    return Result.Err(`shell: command not found: ${id}`);
+    return Result.Err(`shell: command not found: ${id} ${tryHelp}`);
   }
   return new cls(app, args, context).run();
 }
