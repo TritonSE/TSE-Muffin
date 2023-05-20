@@ -19,8 +19,15 @@ async function processCommandMessage(
 ) {
   const { event, say } = context;
 
+  console.log(`(non-interactive) muffin> ${text}`);
+
   const result = await runCommand(text, app, context);
   const reply: string | null = result.ok ? result.value : result.error;
+
+  if (reply !== null) {
+    console.log(reply);
+  }
+  console.log(result.ok ? "(ok)" : "(err)");
 
   const promises: Promise<unknown>[] = [
     addReaction(
@@ -32,7 +39,7 @@ async function processCommandMessage(
   ];
 
   if (reply !== null) {
-    promises.push(say(reply));
+    promises.push(say("```" + reply + "```"));
   }
 
   await Promise.allSettled(promises);
