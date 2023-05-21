@@ -7,8 +7,17 @@ function parseChannel(channel: string): string {
   return match !== null ? match[1] : channel;
 }
 
+function formatEmoji(emoji: string): string {
+  return `:${emoji}:`;
+}
+
+function parseEmoji(emoji: string): string {
+  const match = /:((?:[:][:]|[^:\s])+):/.exec(emoji);
+  return match !== null ? match[1] : emoji;
+}
+
 function formatUser(user: string): string {
   return `<@${user}>`;
 }
 
-export { formatChannel, parseChannel, formatUser };
+export { formatChannel, parseChannel, formatEmoji, parseEmoji, formatUser };

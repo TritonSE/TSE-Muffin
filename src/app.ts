@@ -1,4 +1,4 @@
-import { AllMiddlewareArgs, App, SlackEventMiddlewareArgs } from "@slack/bolt";
+import { App } from "@slack/bolt";
 
 import { CommandContext, runCommand } from "./commands";
 import { cacheProvider } from "./config-cache";

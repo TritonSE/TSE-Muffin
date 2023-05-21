@@ -1,6 +1,6 @@
 import { App, SlackEventMiddlewareArgs } from "@slack/bolt";
 
-import { formatChannel, parseChannel } from "./formatting";
+import { formatChannel, parseChannel, parseEmoji } from "./formatting";
 import { Result } from "./result";
 import { addReaction, getConversationMembers } from "./wrappers";
 
@@ -137,7 +137,8 @@ class ReactCommand extends Command {
     if (this.args.length < 3) {
       return Result.Err(`usage: ${ReactCommand.help.join("\n")}`);
     }
-    const [channel, timestamp, ...reactions] = this.args;
+    const [channel, timestamp, ...unparsedReactions] = this.args;
+    const reactions = unparsedReactions.map(parseEmoji);
 
     const lines: string[] = [];
     for (const reaction of reactions) {
