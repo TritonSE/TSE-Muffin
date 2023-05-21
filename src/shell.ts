@@ -30,7 +30,7 @@ async function shell(app: App) {
 
     let result: Result<string | null, string>;
     try {
-      result = await runCommand(line, app, null);
+      result = await runCommand(line, app, null, true);
     } catch (e) {
       console.error(e);
       setErrPrompt();

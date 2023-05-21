@@ -17,6 +17,7 @@ abstract class Command {
 }
 
 class EchoCommand extends Command {
+  static readonly privileged = false;
   static readonly id = "echo";
   static readonly help = ["echo [ARG]...", "display each ARG"];
 
@@ -26,6 +27,7 @@ class EchoCommand extends Command {
 }
 
 class HelpCommand extends Command {
+  static readonly privileged = false;
   static readonly id = "help";
   static readonly help = [
     `help [COMMAND]...`,
@@ -59,6 +61,7 @@ class HelpCommand extends Command {
 }
 
 class LsCommand extends Command {
+  static readonly privileged = false;
   static readonly id = "ls";
   static readonly help = [
     "ls [CHANNEL]...",
@@ -110,6 +113,7 @@ class LsCommand extends Command {
 }
 
 class ReactCommand extends Command {
+  static readonly privileged = true;
   static readonly id = "react";
   static readonly help = [
     `react CHANNEL TIMESTAMP REACTION [REACTION]...`,
@@ -163,7 +167,8 @@ const commandClassesById: Record<
 async function runCommand(
   line: string,
   app: App,
-  context: CommandContext | null
+  context: CommandContext | null,
+  privileged: boolean
 ): Promise<Result<string | null, string>> {
   const tryHelp = "(try `help`)";
 
@@ -179,6 +184,11 @@ async function runCommand(
   if (cls === undefined) {
     return Result.Err(`shell: command not found: ${id} ${tryHelp}`);
   }
+
+  if (cls.privileged && !privileged) {
+    return Result.Err(`shell: command requires elevated privileges: ${id}`);
+  }
+
   return new cls(app, args, context).run();
 }
 

@@ -1,10 +1,11 @@
 import { AllMiddlewareArgs, App, SlackEventMiddlewareArgs } from "@slack/bolt";
 
-import { runCommand } from "./commands";
+import { CommandContext, runCommand } from "./commands";
+import { cacheProvider } from "./config-cache";
 import env from "./env";
 import { formatUser } from "./formatting";
 import { shell } from "./shell";
-import { addReaction, getBotUserId } from "./wrappers";
+import { addReaction, getUserInfo } from "./wrappers";
 
 const app = new App({
   token: env.SLACK_BOT_TOKEN,
@@ -13,15 +14,27 @@ const app = new App({
 });
 
 async function processCommandMessage(
+  user: string | null,
   text: string,
-  context: SlackEventMiddlewareArgs<"app_mention" | "message"> &
-    AllMiddlewareArgs
+  context: CommandContext
 ) {
   const { event, say } = context;
 
-  console.log(`(non-interactive) muffin> ${text}`);
+  console.log(`${user ?? "(unknown user)"} muffin> ${text}`);
 
-  const result = await runCommand(text, app, context);
+  let privileged = false;
+  if (user !== null) {
+    const userInfoResult = await getUserInfo(app, user);
+    if (userInfoResult.ok) {
+      privileged = userInfoResult.value.is_admin ?? false;
+    } else {
+      console.error(
+        `shell: could not determine privilege: ${userInfoResult.error}`
+      );
+    }
+  }
+
+  const result = await runCommand(text, app, context, privileged);
   const reply: string | null = result.ok ? result.value : result.error;
 
   if (reply !== null) {
@@ -46,10 +59,11 @@ async function processCommandMessage(
 }
 
 app.event("app_mention", async (context) => {
-  const botMention = formatUser(await getBotUserId(app));
+  // Only respond to messages that start with a mention.
+  const botUserId = (await cacheProvider.get(app)).botUserId;
+  const botMention = formatUser(botUserId);
   let text = context.event.text.trimStart();
   if (!text.startsWith(botMention)) {
-    // Don't respond to messages that don't start with a mention.
     // TODO: use postEphemeral to send a hint to the user?
     return;
   }
@@ -57,7 +71,7 @@ app.event("app_mention", async (context) => {
   // Remove the mention.
   text = text.substring(botMention.length);
 
-  await processCommandMessage(text, context);
+  await processCommandMessage(context.event.user ?? null, text, context);
 });
 
 app.message(async (context) => {
@@ -67,7 +81,7 @@ app.message(async (context) => {
     message.subtype === undefined &&
     message.text !== undefined
   ) {
-    await processCommandMessage(message.text, context);
+    await processCommandMessage(message.user, message.text, context);
   }
 });
 
@@ -79,9 +93,17 @@ async function main() {
   await app.start();
   console.log(`port: ${env.PORT}`);
 
-  const botUserId = await getBotUserId(app);
-  console.log(`bot user ID: ${botUserId}`);
+  try {
+    await cacheProvider.get(app);
+  } catch (e) {
+    const message = "failed to initialize config cache";
+    console.error(`${message}: stopping the app...`);
+    await app.stop();
 
+    throw new Error(message, { cause: e });
+  }
+
+  console.log(`bot user ID: ${(await cacheProvider.get(app)).botUserId}`);
   shell(app).catch(console.error);
 }
 
