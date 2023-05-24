@@ -57,6 +57,15 @@ async function processCommandMessage(
   await Promise.allSettled(promises);
 }
 
+app.event("reaction_added", async (context) => {
+  const { event } = context;
+  if (event.item.type === "message") {
+    console.log(
+      `reaction added to message: reaction=${event.reaction}, channel=${event.item.channel}, ts=${event.item.ts}`
+    );
+  }
+});
+
 app.event("app_mention", async (context) => {
   // Only respond to messages that start with a mention.
   const botUserId = (await cacheProvider.get(app)).botUserId;
