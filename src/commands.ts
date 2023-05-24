@@ -4,6 +4,7 @@ import { formatChannel, parseChannel, parseEmoji } from "./formatting";
 import { Result } from "./result";
 import {
   addReaction,
+  editMessage,
   getConversationMembers,
   sendDirectMessage,
   sendMessage,
@@ -28,6 +29,26 @@ class EchoCommand extends Command {
 
   async run() {
     return Result.Ok(`${this.args.join(" ")}`);
+  }
+}
+
+class EditMessageCommand extends Command {
+  static readonly privileged = true;
+  static readonly id = "edit";
+  static readonly help = [
+    `edit CHANNEL MESSAGE TEXT`,
+    "edit the message specified by CHANNEL and TIMESTAMP to contain TEXT",
+  ];
+
+  async run() {
+    if (this.args.length < 3) {
+      return Result.Err(`usage: ${EditMessageCommand.help.join("\n")}`);
+    }
+
+    const [channel, message, ...textParts] = this.args;
+    const text = textParts.join(" ");
+
+    return editMessage(this.app, channel, message, text);
   }
 }
 
@@ -168,8 +189,8 @@ class SendDirectMessageCommand extends Command {
   static readonly privileged = true;
   static readonly id = "send_dm";
   static readonly help = [
-    `send_dm USER[,USER[,...]] MESSAGE`,
-    "send MESSAGE to a direct message chat that contains each USER",
+    `send_dm USER[,USER[,...]] TEXT`,
+    "send TEXT to a direct message chat that contains each USER",
   ];
 
   async run() {
@@ -177,28 +198,28 @@ class SendDirectMessageCommand extends Command {
       return Result.Err(`usage: ${SendDirectMessageCommand.help.join("\n")}`);
     }
 
-    const [usersJoined, ...messageParts] = this.args;
+    const [usersJoined, ...textParts] = this.args;
     const users = usersJoined.split(",");
-    const message = messageParts.join(" ");
+    const text = textParts.join(" ");
 
-    return sendDirectMessage(this.app, users, message);
+    return sendDirectMessage(this.app, users, text);
   }
 }
 
 class SendMessageCommand extends Command {
   static readonly privileged = true;
   static readonly id = "send";
-  static readonly help = [`send CHANNEL MESSAGE`, "send MESSAGE to CHANNEL"];
+  static readonly help = [`send CHANNEL TEXT`, "send TEXT to CHANNEL"];
 
   async run() {
     if (this.args.length < 2) {
       return Result.Err(`usage: ${SendMessageCommand.help.join("\n")}`);
     }
 
-    const [channel, ...messageParts] = this.args;
-    const message = messageParts.join(" ");
+    const [channel, ...textParts] = this.args;
+    const text = textParts.join(" ");
 
-    return sendMessage(this.app, channel, message);
+    return sendMessage(this.app, channel, text);
   }
 }
 
@@ -211,6 +232,7 @@ interface CommandClass {
 // All commands must be added here.
 const commandClasses = [
   EchoCommand,
+  EditMessageCommand,
   HelpCommand,
   LsCommand,
   ReactCommand,
@@ -219,10 +241,15 @@ const commandClasses = [
 ] satisfies CommandClass[];
 
 // Map command IDs to classes.
-const commandClassesById: Record<
-  string,
-  (typeof commandClasses)[number] | undefined
-> = Object.fromEntries(commandClasses.map((c) => [c.id, c]));
+const commandClassesById = commandClasses.reduce<
+  Record<string, (typeof commandClasses)[number] | undefined>
+>((obj, cls) => {
+  if (obj[cls.id] !== undefined) {
+    throw new Error(`shell: duplicate command id: ${cls.id}`);
+  }
+  obj[cls.id] = cls;
+  return obj;
+}, {});
 
 async function runCommand(
   line: string,

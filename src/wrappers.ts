@@ -160,6 +160,30 @@ async function sendMessage(
 }
 
 /**
+ * @returns Ok with no value, or Err with an error message.
+ */
+async function editMessage(
+  app: App,
+  channel: string,
+  timestamp: string,
+  text: string
+): Promise<Result<undefined, string>> {
+  const response = await catchWrapper(
+    app.client.chat.update({
+      channel,
+      ts: timestamp,
+      text,
+    })
+  );
+
+  if (!response.ok) {
+    return Result.Err(response.error ?? "unknown error");
+  }
+
+  return Result.Ok(undefined);
+}
+
+/**
  * @returns Ok with the channel ID, or Err with an error message.
  */
 async function openDirectMessage(
@@ -208,6 +232,7 @@ async function sendDirectMessage(
 
 export {
   addReaction,
+  editMessage,
   getBotUserId,
   getConversationMembers,
   getUserInfo,
