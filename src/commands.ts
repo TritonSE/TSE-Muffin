@@ -169,7 +169,7 @@ class SendDirectMessageCommand extends Command {
   static readonly id = "send_dm";
   static readonly help = [
     `send_dm USER[,USER[,...]] MESSAGE`,
-    "send MESSAGE to each USER",
+    "send MESSAGE to a direct message chat that contains each USER",
   ];
 
   async run() {
