@@ -30,6 +30,9 @@ async function catchWrapper<R extends { ok: boolean }>(
   }
 }
 
+/**
+ * @returns Ok with this bot's user ID, or Err with an error message.
+ */
 async function getBotUserId(app: App): Promise<Result<string, string>> {
   const response = await catchWrapper(app.client.auth.test());
 
@@ -46,6 +49,9 @@ async function getBotUserId(app: App): Promise<Result<string, string>> {
   return Result.Ok(response.user_id);
 }
 
+/**
+ * @returns Ok with the user IDs, or Err with an error message.
+ */
 async function getConversationMembers(
   app: App,
   channel: string
@@ -79,6 +85,9 @@ type User = Exclude<
   undefined
 >;
 
+/**
+ * @returns Ok with the user object, or Err with an error message.
+ */
 async function getUserInfo(
   app: App,
   user: string
@@ -98,17 +107,20 @@ async function getUserInfo(
   return Result.Ok(response.user);
 }
 
+/**
+ * @returns Ok with no value, or Err with an error message.
+ */
 async function addReaction(
   app: App,
   channel: string,
   timestamp: string,
-  name: string
+  reaction: string
 ): Promise<Result<undefined, string>> {
   const response = await catchWrapper(
     app.client.reactions.add({
       channel,
       timestamp,
-      name,
+      name: reaction,
     })
   );
 
@@ -119,11 +131,14 @@ async function addReaction(
   return Result.Ok(undefined);
 }
 
+/**
+ * @returns Ok with the message timestamp, or Err with an error message.
+ */
 async function sendMessage(
   app: App,
   channel: string,
   text: string
-): Promise<Result<undefined, string>> {
+): Promise<Result<string, string>> {
   const response = await catchWrapper(
     app.client.chat.postMessage({
       channel,
@@ -135,9 +150,18 @@ async function sendMessage(
     return Result.Err(response.error ?? "unknown error");
   }
 
-  return Result.Ok(undefined);
+  if (response.ts === undefined) {
+    const message = "ts is missing from chat.postMessage response";
+    console.error(message, response);
+    return Result.Err(message);
+  }
+
+  return Result.Ok(response.ts);
 }
 
+/**
+ * @returns Ok with the channel ID, or Err with an error message.
+ */
 async function openDirectMessage(
   app: App,
   userIds: string[]
@@ -161,11 +185,14 @@ async function openDirectMessage(
   return Result.Ok(response.channel.id);
 }
 
+/**
+ * @returns Ok with the message timestamp, or Err with an error message.
+ */
 async function sendDirectMessage(
   app: App,
   userIds: string[],
   text: string
-): Promise<Result<undefined, string>> {
+): Promise<Result<string, string>> {
   const channelResult = await openDirectMessage(app, userIds);
   if (!channelResult.ok) {
     return Result.Err(`failed to open direct message: ${channelResult.error}`);
@@ -176,7 +203,7 @@ async function sendDirectMessage(
     return Result.Err(`failed to send message: ${sendMessageResult.error}`);
   }
 
-  return Result.Ok(undefined);
+  return Result.Ok(sendMessageResult.value);
 }
 
 export {
