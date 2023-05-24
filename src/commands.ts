@@ -2,7 +2,12 @@ import { App, SlackEventMiddlewareArgs } from "@slack/bolt";
 
 import { formatChannel, parseChannel, parseEmoji } from "./formatting";
 import { Result } from "./result";
-import { addReaction, getConversationMembers } from "./wrappers";
+import {
+  addReaction,
+  getConversationMembers,
+  sendDirectMessage,
+  sendMessage,
+} from "./wrappers";
 
 type CommandContext = SlackEventMiddlewareArgs<"app_mention" | "message">;
 
@@ -13,7 +18,7 @@ abstract class Command {
     protected readonly context: CommandContext | null
   ) {}
 
-  abstract run(): Promise<Result<string | null, string>>;
+  abstract run(): Promise<Result<string | undefined, string>>;
 }
 
 class EchoCommand extends Command {
@@ -137,6 +142,7 @@ class ReactCommand extends Command {
     if (this.args.length < 3) {
       return Result.Err(`usage: ${ReactCommand.help.join("\n")}`);
     }
+
     const [channel, timestamp, ...unparsedReactions] = this.args;
     const reactions = unparsedReactions.map(parseEmoji);
 
@@ -152,12 +158,65 @@ class ReactCommand extends Command {
       }
     }
 
-    return lines.length === 0 ? Result.Ok(null) : Result.Err(lines.join("\n"));
+    return lines.length === 0
+      ? Result.Ok(undefined)
+      : Result.Err(lines.join("\n"));
   }
 }
 
+class SendDirectMessageCommand extends Command {
+  static readonly privileged = true;
+  static readonly id = "send_dm";
+  static readonly help = [
+    `send_dm USER[,USER[,...]] MESSAGE`,
+    "send MESSAGE to each USER",
+  ];
+
+  async run() {
+    if (this.args.length < 2) {
+      return Result.Err(`usage: ${SendDirectMessageCommand.help.join("\n")}`);
+    }
+
+    const [usersJoined, ...messageParts] = this.args;
+    const users = usersJoined.split(",");
+    const message = messageParts.join(" ");
+
+    return sendDirectMessage(this.app, users, message);
+  }
+}
+
+class SendMessageCommand extends Command {
+  static readonly privileged = true;
+  static readonly id = "send";
+  static readonly help = [`send CHANNEL MESSAGE`, "send MESSAGE to CHANNEL"];
+
+  async run() {
+    if (this.args.length < 2) {
+      return Result.Err(`usage: ${SendMessageCommand.help.join("\n")}`);
+    }
+
+    const [channel, ...messageParts] = this.args;
+    const message = messageParts.join(" ");
+
+    return sendMessage(this.app, channel, message);
+  }
+}
+
+interface CommandClass {
+  readonly privileged: boolean;
+  readonly id: string;
+  readonly help: string[];
+}
+
 // All commands must be added here.
-const commandClasses = [EchoCommand, HelpCommand, LsCommand, ReactCommand];
+const commandClasses = [
+  EchoCommand,
+  HelpCommand,
+  LsCommand,
+  ReactCommand,
+  SendDirectMessageCommand,
+  SendMessageCommand,
+] satisfies CommandClass[];
 
 // Map command IDs to classes.
 const commandClassesById: Record<
@@ -170,7 +229,7 @@ async function runCommand(
   app: App,
   context: CommandContext | null,
   privileged: boolean
-): Promise<Result<string | null, string>> {
+): Promise<Result<string | undefined, string>> {
   const tryHelp = "(try `help`)";
 
   const tokens = line.split(/\s+/).filter((t) => t.length > 0);

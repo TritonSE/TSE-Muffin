@@ -1,7 +1,5 @@
-abstract class ResultClass<T, E> {
+abstract class ResultClass {
   abstract readonly ok: boolean;
-
-  abstract assertOk(): T;
 
   static Ok<T>(value: T): Ok<T> {
     return new Ok(value);
@@ -12,27 +10,19 @@ abstract class ResultClass<T, E> {
   }
 }
 
-class Ok<T> extends ResultClass<T, never> {
+class Ok<T> extends ResultClass {
   readonly ok = true;
 
   constructor(public value: T) {
     super();
   }
-
-  assertOk(): T {
-    return this.value;
-  }
 }
 
-class Err<E> extends ResultClass<never, E> {
+class Err<E> extends ResultClass {
   readonly ok = false;
 
   constructor(public error: E) {
     super();
-  }
-
-  assertOk(): never {
-    throw new Error("assertOk called on Err");
   }
 }
 

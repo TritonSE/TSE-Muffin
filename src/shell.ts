@@ -23,12 +23,13 @@ async function shell(app: App) {
 
   for await (const line of rl) {
     if (line.trim().length === 0) {
+      // No command entered.
       setBlankPrompt();
       rl.prompt();
       continue;
     }
 
-    let result: Result<string | null, string>;
+    let result: Result<string | undefined, string>;
     try {
       result = await runCommand(line, app, null, true);
     } catch (e) {

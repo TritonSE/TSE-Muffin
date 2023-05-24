@@ -7,7 +7,9 @@ import { Result } from "./result";
  * attached to the error. This way, the caller can use the `ok` field to
  * determine if an error occurred, instead of using try/catch.
  */
-async function catchWrapper<R>(promise: Promise<R>): Promise<R> {
+async function catchWrapper<R extends { ok: boolean }>(
+  promise: Promise<R>
+): Promise<R> {
   try {
     return await promise;
   } catch (e) {
@@ -36,7 +38,7 @@ async function getBotUserId(app: App): Promise<Result<string, string>> {
   }
 
   if (typeof response.user_id !== "string") {
-    const message = "auth.test response does not have user_id";
+    const message = "user_id is missing from auth.test response";
     console.error(message, response);
     return Result.Err(message);
   }
@@ -151,7 +153,7 @@ async function openDirectMessage(
   }
 
   if (response.channel?.id === undefined) {
-    const message = "conversations.open response does not have channel.id";
+    const message = "channel.id is missing from conversations.open response";
     console.error(message, response);
     return Result.Err(message);
   }
@@ -182,5 +184,6 @@ export {
   getBotUserId,
   getConversationMembers,
   getUserInfo,
+  sendMessage,
   sendDirectMessage,
 };

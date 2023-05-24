@@ -35,9 +35,9 @@ async function processCommandMessage(
   }
 
   const result = await runCommand(text, app, context, privileged);
-  const reply: string | null = result.ok ? result.value : result.error;
+  const reply: string | undefined = result.ok ? result.value : result.error;
 
-  if (reply !== null) {
+  if (typeof reply === "string") {
     console.log(reply);
   }
   console.log(result.ok ? "(ok)" : "(err)");
@@ -50,8 +50,7 @@ async function processCommandMessage(
       result.ok ? "white_check_mark" : "x"
     ),
   ];
-
-  if (reply !== null) {
+  if (typeof reply === "string") {
     promises.push(say("```" + reply + "```"));
   }
 
