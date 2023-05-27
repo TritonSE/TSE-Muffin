@@ -99,7 +99,7 @@ async function getUserInfo(
   }
 
   if (response.user === undefined) {
-    const message = "users.info response does not have user";
+    const message = "user is missing from users.info response";
     console.error(message, response);
     return Result.Err(message);
   }

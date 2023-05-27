@@ -1,4 +1,5 @@
 import { App } from "@slack/bolt";
+import mongoose from "mongoose";
 
 import { CommandContext, runCommand } from "./commands";
 import { cacheProvider } from "./config-cache";
@@ -98,14 +99,19 @@ app.error(async (error) => {
 });
 
 async function main() {
+  console.log("connecting to MongoDB...");
+  await mongoose.connect(env.MONGODB_URI);
+  console.log("connected to MongoDB!");
+
+  console.log(`starting Bolt app on port: ${env.PORT}`);
   await app.start();
-  console.log(`port: ${env.PORT}`);
+  console.log("started Bolt app!");
 
   try {
     await cacheProvider.get(app);
   } catch (e) {
     const message = "failed to initialize config cache";
-    console.error(`${message}: stopping the app...`);
+    console.error(`${message}: stopping Bolt app...`);
     await app.stop();
 
     throw new Error(message, { cause: e });

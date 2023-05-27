@@ -9,6 +9,13 @@ import { getBotUserId } from "./wrappers";
 class ConfigCache {
   botUserId = "BOT_USER_ID_NOT_INITIALIZED";
 
+  // TODO: this should come from MongoDB eventually.
+  roundDurationSecs =
+    14 * // days
+    24 * // hours per day
+    60 * // minutes per hour
+    60; // seconds per minute
+
   async load(app: App): Promise<Result<undefined, string>> {
     const botUserIdResult = await getBotUserId(app);
     if (!botUserIdResult.ok) {

@@ -1,3 +1,7 @@
+import { DateTime } from "luxon";
+
+import { Result } from "./result";
+
 function formatChannel(channel: string): string {
   return `<#${channel}>`;
 }
@@ -20,4 +24,21 @@ function formatUser(user: string): string {
   return `<@${user}>`;
 }
 
-export { formatChannel, parseChannel, formatEmoji, parseEmoji, formatUser };
+function parseDate(date: string): Result<DateTime, string> {
+  const dt = DateTime.fromISO(date);
+  if (!dt.isValid) {
+    // These fields should be defined if it's not valid.
+    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+    return Result.Err(`${dt.invalidReason}: ${dt.invalidExplanation}`);
+  }
+  return Result.Ok(dt);
+}
+
+export {
+  formatChannel,
+  parseChannel,
+  formatEmoji,
+  parseEmoji,
+  formatUser,
+  parseDate,
+};

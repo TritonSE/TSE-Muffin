@@ -1,6 +1,9 @@
 import { App, SlackEventMiddlewareArgs } from "@slack/bolt";
+import { DateTime } from "luxon";
 
+import { cacheProvider } from "./config-cache";
 import { formatChannel, parseChannel, parseEmoji } from "./formatting";
+import { createRoundAndMatchUsers } from "./matching";
 import { Result } from "./result";
 import {
   addReaction,
@@ -185,11 +188,46 @@ class ReactCommand extends Command {
   }
 }
 
+class RoundCreateCommand extends Command {
+  static readonly privileged = true;
+  static readonly id = "round_create";
+  static readonly help = [
+    "round_create CHANNEL",
+    "immediately create a new round by matching up the users in CHANNEL",
+  ];
+
+  async run() {
+    if (this.args.length !== 1) {
+      return Result.Err(`usage: ${RoundCreateCommand.help.join("\n")}`);
+    }
+    const channel = this.args[0];
+
+    const now = DateTime.now();
+    const roundDurationSecs = (await cacheProvider.get(this.app))
+      .roundDurationSecs;
+    const initialMessageScheduledFor = now;
+    const reminderMessageScheduledFor = now.plus({
+      seconds: roundDurationSecs / 2,
+    });
+    const finalMessageScheduledFor = now.plus({
+      seconds: roundDurationSecs,
+    });
+
+    return createRoundAndMatchUsers(
+      this.app,
+      channel,
+      initialMessageScheduledFor,
+      reminderMessageScheduledFor,
+      finalMessageScheduledFor
+    );
+  }
+}
+
 class SendDirectMessageCommand extends Command {
   static readonly privileged = true;
   static readonly id = "send_dm";
   static readonly help = [
-    `send_dm USER[,USER[,...]] TEXT`,
+    "send_dm USER[,USER[,...]] TEXT",
     "send TEXT to a direct message chat that contains each USER",
   ];
 
@@ -236,6 +274,7 @@ const commandClasses = [
   HelpCommand,
   LsCommand,
   ReactCommand,
+  RoundCreateCommand,
   SendDirectMessageCommand,
   SendMessageCommand,
 ] satisfies CommandClass[];

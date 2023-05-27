@@ -32,6 +32,7 @@ function assertEnvVar(
 
 const env = {
   PORT: getPort(),
+  MONGODB_URI: assertEnvVar(process.env, "MONGODB_URI"),
   SLACK_BOT_TOKEN: assertEnvVar(process.env, "SLACK_BOT_TOKEN"),
   SLACK_SIGNING_SECRET: assertEnvVar(process.env, "SLACK_SIGNING_SECRET"),
 } as const;

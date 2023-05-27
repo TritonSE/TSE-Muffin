@@ -11,9 +11,12 @@
   },
   "dependencies": {
     "@slack/bolt": "^3.13.1",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "luxon": "^3.3.0",
+    "mongoose": "^7.2.1"
   },
   "devDependencies": {
+    "@types/luxon": "^3.3.0",
     "@typescript-eslint/eslint-plugin": "^5.59.6",
     "@typescript-eslint/parser": "^5.59.6",
     "eslint": "^8.41.0",
