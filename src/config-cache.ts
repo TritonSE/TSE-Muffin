@@ -1,31 +1,48 @@
 import { App } from "@slack/bolt";
+import { Duration } from "luxon";
 
+import { ConfigDocument, ConfigModel } from "./models";
 import { Result } from "./result";
 import { getBotUserId } from "./wrappers";
 
-/**
- * Cache for config options and other global values that shouldn't change.
- */
 class ConfigCache {
-  botUserId = "BOT_USER_ID_NOT_INITIALIZED";
+  constructor(
+    public readonly botUserId: string,
+    public readonly config: ConfigDocument
+  ) {}
 
-  // TODO: this should come from MongoDB eventually.
-  roundDurationSecs =
-    14 * // days
-    24 * // hours per day
-    60 * // minutes per hour
-    60; // seconds per minute
-
-  async load(app: App): Promise<Result<undefined, string>> {
+  static async load(app: App): Promise<Result<ConfigCache, string>> {
     const botUserIdResult = await getBotUserId(app);
     if (!botUserIdResult.ok) {
       return Result.Err(
         `could not determine bot user ID: ${botUserIdResult.error}`
       );
     }
-    this.botUserId = botUserIdResult.value;
+    const botUserId = botUserIdResult.value;
 
-    return Result.Ok(undefined);
+    let config;
+    try {
+      config = await ConfigModel.findOne();
+      if (config === null) {
+        console.log("config does not exist: creating default config");
+        config = await ConfigModel.create({
+          roundDurationDays: 14,
+          reminderMessageDelayFactor: 0.5,
+          finalMessageDelayFactor: 1.0,
+          summaryMessageDelayFactor: 16 / 14,
+          periodicJobIntervalSec: Duration.fromObject({ hours: 1 }).as(
+            "seconds"
+          ),
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      return Result.Err(
+        "unknown error occurred while loading config from MongoDB"
+      );
+    }
+
+    return Result.Ok(new ConfigCache(botUserId, config));
   }
 }
 
@@ -33,15 +50,14 @@ class ConfigCache {
  * Manage cache loading and reloading.
  */
 class ConfigCacheProvider {
-  private cache = new ConfigCache();
   private loadingPromise: Promise<ConfigCache> | null = null;
 
   private async load(app: App): Promise<ConfigCache> {
-    const result = await this.cache.load(app);
+    const result = await ConfigCache.load(app);
     if (!result.ok) {
       throw new Error(result.error);
     }
-    return this.cache;
+    return result.value;
   }
 
   get(app: App): Promise<ConfigCache> {

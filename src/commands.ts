@@ -2,8 +2,13 @@ import { App, SlackEventMiddlewareArgs } from "@slack/bolt";
 import { DateTime } from "luxon";
 
 import { cacheProvider } from "./config-cache";
-import { formatChannel, parseChannel, parseEmoji } from "./formatting";
-import { createRoundAndMatchUsers } from "./matching";
+import {
+  formatChannel,
+  parseChannel,
+  parseDate,
+  parseEmoji,
+} from "./formatting";
+import { ConfigDocument, Round, RoundModel } from "./models";
 import { Result } from "./result";
 import {
   addReaction,
@@ -28,7 +33,7 @@ abstract class Command {
 class EchoCommand extends Command {
   static readonly privileged = false;
   static readonly id = "echo";
-  static readonly help = ["echo [ARG]...", "display each ARG"];
+  static readonly help = ["[ARG]...", "display each ARG"];
 
   async run() {
     return Result.Ok(`${this.args.join(" ")}`);
@@ -39,13 +44,13 @@ class EditMessageCommand extends Command {
   static readonly privileged = true;
   static readonly id = "edit";
   static readonly help = [
-    `edit CHANNEL MESSAGE TEXT`,
+    `CHANNEL MESSAGE TEXT`,
     "edit the message specified by CHANNEL and TIMESTAMP to contain TEXT",
   ];
 
   async run() {
     if (this.args.length < 3) {
-      return Result.Err(`usage: ${EditMessageCommand.help.join("\n")}`);
+      return usageErr(EditMessageCommand);
     }
 
     const [channel, message, ...textParts] = this.args;
@@ -59,7 +64,7 @@ class HelpCommand extends Command {
   static readonly privileged = false;
   static readonly id = "help";
   static readonly help = [
-    `help [COMMAND]...`,
+    `[COMMAND]...`,
     "display help for each COMMAND, defaulting to all commands",
   ];
 
@@ -79,9 +84,7 @@ class HelpCommand extends Command {
         continue;
       }
 
-      // Indent every line of the help message except the first.
-      const helpLines = cls.help.map((line, i) => (i == 0 ? "" : "\t") + line);
-      lines.push(...helpLines);
+      lines.push(helpText(cls));
     }
 
     const joined = lines.join("\n");
@@ -93,7 +96,7 @@ class LsCommand extends Command {
   static readonly privileged = false;
   static readonly id = "ls";
   static readonly help = [
-    "ls [CHANNEL]...",
+    "[CHANNEL]...",
     "list the members in each CHANNEL, defaulting to the current channel",
   ];
 
@@ -145,7 +148,7 @@ class ReactCommand extends Command {
   static readonly privileged = true;
   static readonly id = "react";
   static readonly help = [
-    `react CHANNEL TIMESTAMP REACTION [REACTION]...`,
+    `CHANNEL TIMESTAMP REACTION [REACTION]...`,
     `add each REACTION to the message specified by CHANNEL and TIMESTAMP`,
   ];
 
@@ -164,7 +167,7 @@ class ReactCommand extends Command {
 
   async run() {
     if (this.args.length < 3) {
-      return Result.Err(`usage: ${ReactCommand.help.join("\n")}`);
+      return usageErr(ReactCommand);
     }
 
     const [channel, timestamp, ...unparsedReactions] = this.args;
@@ -188,38 +191,98 @@ class ReactCommand extends Command {
   }
 }
 
-class RoundCreateCommand extends Command {
+class RoundScheduleCommand extends Command {
   static readonly privileged = true;
-  static readonly id = "round_create";
+  static readonly id = "round_schedule";
   static readonly help = [
-    "round_create CHANNEL",
-    "immediately create a new round by matching up the users in CHANNEL",
+    "CHANNEL [DATE]",
+    "schedule a new round of matches for the users in CHANNEL, which will start on DATE",
   ];
 
-  async run() {
-    if (this.args.length !== 1) {
-      return Result.Err(`usage: ${RoundCreateCommand.help.join("\n")}`);
+  async determineStartDate(
+    startDateArg: string | undefined
+  ): Promise<Result<DateTime, string>> {
+    if (startDateArg === undefined) {
+      // TODO: use the start date of the last round plus roundDurationDays
+      return Result.Err("start date not provided");
     }
-    const channel = this.args[0];
 
-    const now = DateTime.now();
-    const roundDurationSecs = (await cacheProvider.get(this.app))
-      .roundDurationSecs;
-    const initialMessageScheduledFor = now;
-    const reminderMessageScheduledFor = now.plus({
-      seconds: roundDurationSecs / 2,
-    });
-    const finalMessageScheduledFor = now.plus({
-      seconds: roundDurationSecs,
-    });
+    const parseResult = parseDate(startDateArg);
+    if (!parseResult.ok) {
+      return Result.Err(`failed to parse start date: ${parseResult.error}`);
+    }
 
-    return createRoundAndMatchUsers(
-      this.app,
-      channel,
-      initialMessageScheduledFor,
-      reminderMessageScheduledFor,
-      finalMessageScheduledFor
+    if (parseResult.value.toMillis() < Date.now()) {
+      return Result.Err("start date is in the past");
+    }
+
+    return parseResult;
+  }
+
+  /**
+   * Calculate the scheduled date for a particular event.
+   */
+  calculateScheduled<
+    K extends
+      | "reminderMessageDelayFactor"
+      | "finalMessageDelayFactor"
+      | "summaryMessageDelayFactor"
+  >(config: ConfigDocument, startDate: DateTime, factorName: K) {
+    return startDate
+      .plus({
+        days: config.roundDurationDays * config[factorName],
+      })
+      .toJSDate();
+  }
+
+  async run() {
+    if (this.args.length !== 1 && this.args.length !== 2) {
+      return usageErr(RoundScheduleCommand);
+    }
+
+    const [channel, startDateArg] = this.args;
+
+    const startDateResult = await this.determineStartDate(startDateArg);
+    if (!startDateResult.ok) {
+      return startDateResult;
+    }
+    const startDate = startDateResult.value;
+
+    const config = (await cacheProvider.get(this.app)).config;
+
+    const reminderMessageScheduledFor = this.calculateScheduled(
+      config,
+      startDate,
+      "reminderMessageDelayFactor"
     );
+    const finalMessageScheduledFor = this.calculateScheduled(
+      config,
+      startDate,
+      "finalMessageDelayFactor"
+    );
+    const summaryMessageScheduledFor = this.calculateScheduled(
+      config,
+      startDate,
+      "summaryMessageDelayFactor"
+    );
+
+    const rawRound: Round = {
+      channel,
+      matchingScheduledFor: startDate.toJSDate(),
+      reminderMessageScheduledFor,
+      finalMessageScheduledFor,
+      summaryMessageScheduledFor,
+    };
+
+    try {
+      const round = await RoundModel.create(rawRound);
+      return Result.Ok(round._id.toString());
+    } catch (e) {
+      console.error(e);
+      return Result.Err(
+        "unknown error while creating round in MongoDB (check logs)"
+      );
+    }
   }
 }
 
@@ -227,13 +290,13 @@ class SendDirectMessageCommand extends Command {
   static readonly privileged = true;
   static readonly id = "send_dm";
   static readonly help = [
-    "send_dm USER[,USER[,...]] TEXT",
+    "USER[,USER[,...]] TEXT",
     "send TEXT to a direct message chat that contains each USER",
   ];
 
   async run() {
     if (this.args.length < 2) {
-      return Result.Err(`usage: ${SendDirectMessageCommand.help.join("\n")}`);
+      return usageErr(SendDirectMessageCommand);
     }
 
     const [usersJoined, ...textParts] = this.args;
@@ -247,11 +310,11 @@ class SendDirectMessageCommand extends Command {
 class SendMessageCommand extends Command {
   static readonly privileged = true;
   static readonly id = "send";
-  static readonly help = [`send CHANNEL TEXT`, "send TEXT to CHANNEL"];
+  static readonly help = [`CHANNEL TEXT`, "send TEXT to CHANNEL"];
 
   async run() {
     if (this.args.length < 2) {
-      return Result.Err(`usage: ${SendMessageCommand.help.join("\n")}`);
+      return usageErr(SendMessageCommand);
     }
 
     const [channel, ...textParts] = this.args;
@@ -274,10 +337,22 @@ const commandClasses = [
   HelpCommand,
   LsCommand,
   ReactCommand,
-  RoundCreateCommand,
+  RoundScheduleCommand,
   SendDirectMessageCommand,
   SendMessageCommand,
 ] satisfies CommandClass[];
+
+function helpText(cls: CommandClass) {
+  // Indent every line of the help message except the first.
+  const lines = cls.help.map((line, i) => (i == 0 ? "" : "\t") + line);
+
+  // Prepend the command name and join the lines.
+  return `${cls.id} ${lines.join("\n")}`;
+}
+
+function usageErr(cls: CommandClass) {
+  return Result.Err(`usage: ${helpText(cls)}`);
+}
 
 // Map command IDs to classes.
 const commandClassesById = commandClasses.reduce<
@@ -312,7 +387,9 @@ async function runCommand(
   }
 
   if (cls.privileged && !privileged) {
-    return Result.Err(`shell: command requires elevated privileges: ${id}`);
+    return Result.Err(
+      `shell: you must be a Workspace Admin to use this command: ${id}`
+    );
   }
 
   return new cls(app, args, context).run();

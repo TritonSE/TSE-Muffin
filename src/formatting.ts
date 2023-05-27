@@ -25,7 +25,7 @@ function formatUser(user: string): string {
 }
 
 function parseDate(date: string): Result<DateTime, string> {
-  const dt = DateTime.fromISO(date);
+  const dt = DateTime.fromISO(date, { zone: "utc" });
   if (!dt.isValid) {
     // These fields should be defined if it's not valid.
     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions

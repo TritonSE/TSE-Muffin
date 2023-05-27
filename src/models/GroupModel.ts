@@ -1,6 +1,6 @@
 import { HydratedDocument, model, Schema, Types } from "mongoose";
 
-const GROUP_STATUSES = ["unknown", "met", "scheduled"] as const;
+const GROUP_STATUSES = ["unknown", "met", "did_not_meet", "scheduled"] as const;
 type GroupStatus = (typeof GROUP_STATUSES)[number];
 
 interface Group {
@@ -53,11 +53,13 @@ const GroupSchema = new Schema<Group>({
   round: {
     type: Schema.Types.ObjectId,
     required: true,
+    immutable: true,
     index: true,
   },
   userIds: {
     type: [String],
     required: true,
+    immutable: true,
   },
   status: {
     type: String,

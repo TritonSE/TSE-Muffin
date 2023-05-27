@@ -1,18 +1,32 @@
 import { HydratedDocument, model, Schema } from "mongoose";
 
 interface Round {
-  /** When to send the initial message for each group. */
-  initialMessageScheduledFor: Date;
+  /** ID of the channel containing the users to match up. */
+  channel: string;
+
+  /**
+   * When to match users into groups and send the initial message for each
+   * group.
+   */
+  matchingScheduledFor: Date;
 
   /** When to send the reminder message for each group. */
   reminderMessageScheduledFor: Date;
 
   /** When to send the final message for each group. */
   finalMessageScheduledFor: Date;
+
+  /** When to send the message summarizing how many groups met. */
+  summaryMessageScheduledFor: Date;
 }
 
 const RoundSchema = new Schema<Round>({
-  initialMessageScheduledFor: {
+  channel: {
+    type: String,
+    required: true,
+    immutable: true,
+  },
+  matchingScheduledFor: {
     type: Date,
     required: true,
   },
@@ -24,9 +38,13 @@ const RoundSchema = new Schema<Round>({
     type: Date,
     required: true,
   },
+  summaryMessageScheduledFor: {
+    type: Date,
+    required: true,
+  },
 });
 
 const RoundModel = model("Round", RoundSchema);
 type RoundDocument = HydratedDocument<Round>;
 
-export { RoundModel, RoundDocument };
+export { Round, RoundModel, RoundDocument };

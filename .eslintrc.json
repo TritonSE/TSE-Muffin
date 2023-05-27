@@ -9,8 +9,7 @@
     "plugin:@typescript-eslint/recommended-requiring-type-checking",
     "plugin:@typescript-eslint/strict",
     "plugin:import/recommended",
-    "plugin:import/typescript",
-    "prettier"
+    "plugin:import/typescript"
   ],
   "overrides": [],
   "parser": "@typescript-eslint/parser",
@@ -19,15 +18,23 @@
     "sourceType": "module",
     "project": true
   },
-  "plugins": ["@typescript-eslint", "import"],
+  "plugins": ["@typescript-eslint", "import", "eslint-plugin-tsdoc"],
   "rules": {
     "@typescript-eslint/require-await": "off",
+    "sort-imports": [
+      "warn",
+      {
+        "ignoreCase": true,
+        "ignoreDeclarationSort": true
+      }
+    ],
     "import/order": [
       "warn",
       {
         "alphabetize": { "order": "asc" },
         "newlines-between": "always"
       }
-    ]
+    ],
+    "tsdoc/syntax": "warn"
   }
 }
