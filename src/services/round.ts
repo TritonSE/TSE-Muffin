@@ -35,10 +35,13 @@ async function createRound(
 
   const rawRound: Round = {
     channel,
-    matchingCompleted: false,
     matchingScheduledFor: startDate.toJSDate(),
+    matchingCompleted: false,
+    allInitialMessagesSent: false,
     reminderMessageScheduledFor,
+    allReminderMessagesSent: false,
     finalMessageScheduledFor,
+    allFinalMessagesSent: false,
     summaryMessageScheduledFor,
   };
 

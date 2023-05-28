@@ -116,8 +116,6 @@ async function main() {
     throw new Error(message, { cause: e });
   }
 
-  console.log(`bot user ID: ${(await cacheProvider.get(app)).botUserId}`);
-
   const runner = await JobRunner.create(app);
   runner.run().catch(console.error);
   await runner.waitForFirstRun();

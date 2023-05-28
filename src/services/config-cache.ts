@@ -43,6 +43,9 @@ class ConfigCache {
       );
     }
 
+    console.log(`bot user ID: ${botUserId}`);
+    console.log(`loaded config: ${JSON.stringify(config.toJSON())}`);
+
     return Result.Ok(new ConfigCache(botUserId, config));
   }
 }
