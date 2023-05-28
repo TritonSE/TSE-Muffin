@@ -1,6 +1,10 @@
+/**
+ * Wrapper functions for Slack API methods.
+ */
+
 import { App } from "@slack/bolt";
 
-import { Result } from "./result";
+import { Result } from "../util/result";
 
 /**
  * If a Slack Web API method throws an error, catch it and return the response
@@ -31,7 +35,9 @@ async function catchWrapper<R extends { ok: boolean }>(
 }
 
 /**
- * @returns Ok with this bot's user ID, or Err with an error message.
+ * Get this bot's user ID on Slack.
+ *
+ * @returns Ok with the user ID, or Err with an error message.
  */
 async function getBotUserId(app: App): Promise<Result<string, string>> {
   const response = await catchWrapper(app.client.auth.test());
@@ -50,6 +56,8 @@ async function getBotUserId(app: App): Promise<Result<string, string>> {
 }
 
 /**
+ * Get the users in a conversation.
+ *
  * @returns Ok with the user IDs, or Err with an error message.
  */
 async function getConversationMembers(
@@ -86,6 +94,8 @@ type User = Exclude<
 >;
 
 /**
+ * Get information about the user with the specified ID.
+ *
  * @returns Ok with the user object, or Err with an error message.
  */
 async function getUserInfo(
@@ -108,6 +118,8 @@ async function getUserInfo(
 }
 
 /**
+ * Add a reaction to a message.
+ *
  * @returns Ok with no value, or Err with an error message.
  */
 async function addReaction(
@@ -131,7 +143,47 @@ async function addReaction(
   return Result.Ok(undefined);
 }
 
+// If any of these errors are encountered when adding a reaction, don't
+// attempt to add any more reactions.
+// https://api.slack.com/methods/reactions.add#errors
+const ADD_REACTION_EXIT_EARLY_ERRORS = new Set([
+  "bad_timestamp",
+  "channel_not_found",
+  "is_archived",
+  "message_not_found",
+  "not_reactable",
+  "thread_locked",
+  "too_many_reactions",
+]);
+
 /**
+ * Add multiple reactions to a message.
+ *
+ * @returns Ok with no value, or Err with an error message.
+ */
+async function addReactions(
+  app: App,
+  channel: string,
+  timestamp: string,
+  reactions: string[]
+): Promise<Result<undefined, string[]>> {
+  const lines: string[] = [];
+  for (const reaction of reactions) {
+    const result = await addReaction(app, channel, timestamp, reaction);
+
+    if (!result.ok) {
+      lines.push(result.error);
+      if (ADD_REACTION_EXIT_EARLY_ERRORS.has(result.error)) {
+        break;
+      }
+    }
+  }
+
+  return lines.length === 0 ? Result.Ok(undefined) : Result.Err(lines);
+}
+
+/**
+ * Send a message to a conversation, specified by its channel ID.
  * @returns Ok with the message timestamp, or Err with an error message.
  */
 async function sendMessage(
@@ -160,6 +212,8 @@ async function sendMessage(
 }
 
 /**
+ * Edit a previously sent message.
+ *
  * @returns Ok with no value, or Err with an error message.
  */
 async function editMessage(
@@ -184,6 +238,9 @@ async function editMessage(
 }
 
 /**
+ * Get the channel ID of a direct message chat containing this bot and the
+ * specified users.
+ *
  * @returns Ok with the channel ID, or Err with an error message.
  */
 async function openDirectMessage(
@@ -210,6 +267,8 @@ async function openDirectMessage(
 }
 
 /**
+ * Send a direct message to the specified users.
+ *
  * @returns Ok with the message timestamp, or Err with an error message.
  */
 async function sendDirectMessage(
@@ -232,6 +291,7 @@ async function sendDirectMessage(
 
 export {
   addReaction,
+  addReactions,
   editMessage,
   getBotUserId,
   getConversationMembers,

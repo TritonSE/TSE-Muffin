@@ -1,23 +1,23 @@
 import { App, SlackEventMiddlewareArgs } from "@slack/bolt";
 import { DateTime } from "luxon";
 
-import { cacheProvider } from "./config-cache";
+import { ConfigDocument } from "../models/ConfigModel";
+import { Round, RoundDocument, RoundModel } from "../models/RoundModel";
+import { cacheProvider } from "../services/config-cache";
+import {
+  addReactions,
+  editMessage,
+  getConversationMembers,
+  sendDirectMessage,
+  sendMessage,
+} from "../services/slack";
 import {
   formatChannel,
   parseChannel,
   parseDate,
   parseEmoji,
-} from "./formatting";
-import { ConfigDocument } from "./models/ConfigModel";
-import { Round, RoundDocument, RoundModel } from "./models/RoundModel";
-import { Result } from "./result";
-import {
-  addReaction,
-  editMessage,
-  getConversationMembers,
-  sendDirectMessage,
-  sendMessage,
-} from "./wrappers";
+} from "../util/formatting";
+import { Result } from "../util/result";
 
 type CommandContext = SlackEventMiddlewareArgs<"app_mention" | "message">;
 
@@ -153,19 +153,6 @@ class ReactCommand extends Command {
     `add each REACTION to the message specified by CHANNEL and TIMESTAMP`,
   ];
 
-  // If any of these errors are encountered when adding a reaction, don't
-  // attempt to add any more reactions.
-  // https://api.slack.com/methods/reactions.add#errors
-  static readonly EXIT_EARLY_ERRORS = new Set([
-    "bad_timestamp",
-    "channel_not_found",
-    "is_archived",
-    "message_not_found",
-    "not_reactable",
-    "thread_locked",
-    "too_many_reactions",
-  ]);
-
   async run() {
     if (this.args.length < 3) {
       return usageErr(ReactCommand);
@@ -174,21 +161,11 @@ class ReactCommand extends Command {
     const [channel, timestamp, ...unparsedReactions] = this.args;
     const reactions = unparsedReactions.map(parseEmoji);
 
-    const lines: string[] = [];
-    for (const reaction of reactions) {
-      const result = await addReaction(this.app, channel, timestamp, reaction);
+    const result = await addReactions(this.app, channel, timestamp, reactions);
 
-      if (!result.ok) {
-        lines.push(`react: ${result.error}`);
-        if (ReactCommand.EXIT_EARLY_ERRORS.has(result.error)) {
-          break;
-        }
-      }
-    }
-
-    return lines.length === 0
-      ? Result.Ok(undefined)
-      : Result.Err(lines.join("\n"));
+    return result.ok
+      ? result
+      : Result.Err(result.error.map((line) => `react: ${line}`).join("\n"));
   }
 }
 

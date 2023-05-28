@@ -2,12 +2,12 @@ import { App } from "@slack/bolt";
 import { DateTime } from "luxon";
 import mongoose from "mongoose";
 
-import { cacheProvider } from "./config-cache";
-import { GroupModel } from "./models/GroupModel";
-import { RoundModel } from "./models/RoundModel";
-import { Result } from "./result";
-import { getConversationMembers } from "./wrappers";
+import { GroupModel } from "../models/GroupModel";
+import { RoundModel } from "../models/RoundModel";
+import { Result } from "../util/result";
 
+import { cacheProvider } from "./config-cache";
+import { getConversationMembers } from "./slack";
 /**
  * @returns Ok with the users that should be matched in this channel, or Err
  * with an error message.

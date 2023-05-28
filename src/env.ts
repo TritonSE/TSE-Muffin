@@ -1,5 +1,3 @@
-import "dotenv/config";
-
 function getPort(): number {
   const port = process.env.PORT;
   if (port !== undefined) {

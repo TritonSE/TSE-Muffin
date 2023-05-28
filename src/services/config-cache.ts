@@ -1,9 +1,10 @@
 import { App } from "@slack/bolt";
 import { Duration } from "luxon";
 
-import { ConfigDocument, ConfigModel } from "./models/ConfigModel";
-import { Result } from "./result";
-import { getBotUserId } from "./wrappers";
+import { ConfigDocument, ConfigModel } from "../models/ConfigModel";
+import { Result } from "../util/result";
+
+import { getBotUserId } from "./slack";
 
 class ConfigCache {
   constructor(

@@ -3,8 +3,9 @@ import { promises as readline } from "node:readline";
 
 import { App } from "@slack/bolt";
 
+import { Result } from "../util/result";
+
 import { runCommand } from "./commands";
-import { Result } from "./result";
 
 async function shell(app: App) {
   const rl = readline.createInterface(stdin, stdout);

@@ -1,12 +1,14 @@
+import "dotenv/config";
+
 import { App } from "@slack/bolt";
 import mongoose from "mongoose";
 
-import { CommandContext, runCommand } from "./commands";
-import { cacheProvider } from "./config-cache";
 import env from "./env";
-import { formatUser } from "./formatting";
-import { shell } from "./shell";
-import { addReaction, getUserInfo } from "./wrappers";
+import { cacheProvider } from "./services/config-cache";
+import { addReaction, getUserInfo } from "./services/slack";
+import { CommandContext, runCommand } from "./shell/commands";
+import { shell } from "./shell/shell";
+import { formatUser } from "./util/formatting";
 
 const app = new App({
   token: env.SLACK_BOT_TOKEN,
