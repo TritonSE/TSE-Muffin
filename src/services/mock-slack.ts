@@ -2,7 +2,7 @@ import { App } from "@slack/bolt";
 
 import { Result } from "../util/result";
 
-import { sendDirectMessage, sendMessage } from "./slack";
+import { addReactions, sendDirectMessage, sendMessage } from "./slack";
 
 class FakeTimestampGenerator {
   private lastEpochMs = 0;
@@ -36,6 +36,36 @@ class FakeTimestampGenerator {
 
 const fakeTimestampGenerator = new FakeTimestampGenerator();
 
+class FakeChannelGenerator {
+  get(userIds: string[]): string {
+    // Make a deterministic channel ID for the same user IDs in any order.
+    const chars = [];
+    const minLength = Math.min(...userIds.map((id) => id.length));
+    for (let i = 0; i < minLength; i++) {
+      const charsAtPos = userIds.map((id) => id[id.length - 1 - i]);
+      charsAtPos.sort();
+      chars.push(...charsAtPos);
+    }
+    const channelIdSuffix = chars.slice(0, 10).join("").padEnd(10, "0");
+
+    return `fakeC${channelIdSuffix}`;
+  }
+}
+
+const fakeChannelGenerator = new FakeChannelGenerator();
+
+const mockAddReactions: typeof addReactions = async (
+  _app: App,
+  channel: string,
+  timestamp: string,
+  reactions: string[]
+) => {
+  console.log(
+    `mock reactions to ${channel} ${timestamp}: ${reactions.join(", ")}`
+  );
+  return Result.Ok(undefined);
+};
+
 const mockSendMessage: typeof sendMessage = async (
   _app: App,
   channel: string,
@@ -51,7 +81,10 @@ const mockSendDirectMessage: typeof sendDirectMessage = async (
   text: string
 ) => {
   console.log(`mock direct message to ${userIds.join(",")}: ${text}`);
-  return Result.Ok(fakeTimestampGenerator.get());
+  return Result.Ok([
+    fakeChannelGenerator.get(userIds),
+    fakeTimestampGenerator.get(),
+  ]);
 };
 
-export { mockSendMessage, mockSendDirectMessage };
+export { mockAddReactions, mockSendMessage, mockSendDirectMessage };

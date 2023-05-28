@@ -5,13 +5,22 @@ import {
   composeInitialMessage,
   composeReminderMessage,
   composeSummaryMessage,
+  REACTION_TO_GROUP_STATUS,
 } from "../dialogue";
 import env from "../env";
 import { Group, GroupModel, GroupStatus } from "../models/GroupModel";
 import { Round, RoundModel } from "../models/RoundModel";
 import { createGroups } from "../services/group";
-import { mockSendDirectMessage, mockSendMessage } from "../services/mock-slack";
-import { sendDirectMessage, sendMessage } from "../services/slack";
+import {
+  mockAddReactions,
+  mockSendDirectMessage,
+  mockSendMessage,
+} from "../services/mock-slack";
+import {
+  addReactions,
+  sendDirectMessage,
+  sendMessage,
+} from "../services/slack";
 import { Result } from "../util/result";
 import { IntervalTimer } from "../util/timer";
 
@@ -67,6 +76,7 @@ abstract class ScheduledDirectMessageJob extends Job {
   abstract groupMessageTimestampField: keyof Group &
     `${string}MessageTimestamp`;
   abstract composeMessage: (channel: string, userIds: string[]) => string;
+  abstract includeReactionMenu: boolean;
 
   async run() {
     const rounds = await RoundModel.find({
@@ -77,7 +87,19 @@ abstract class ScheduledDirectMessageJob extends Job {
     const send = env.MOCK_SCHEDULED_MESSAGES
       ? mockSendDirectMessage
       : sendDirectMessage;
-    const rateLimit = new IntervalTimer(200);
+
+    // 300 messages per minute = 5 messages per second.
+    // https://api.slack.com/methods/chat.postMessage#rate_limiting
+    const sendRateLimit = new IntervalTimer(1000 / 5);
+
+    const react = env.MOCK_SCHEDULED_MESSAGES ? mockAddReactions : addReactions;
+    const reactions = Object.keys(REACTION_TO_GROUP_STATUS);
+
+    // 50 reactions per minute, but we also need to account for the number of
+    // reactions we are adding at a time.
+    // https://api.slack.com/methods/reactions.add
+    const reactBatchesPerMinute = 50 / reactions.length;
+    const reactRateLimit = new IntervalTimer(60000 / reactBatchesPerMinute);
 
     const lines: string[] = [];
     let errored = false;
@@ -85,17 +107,24 @@ abstract class ScheduledDirectMessageJob extends Job {
       const groups = await GroupModel.find({
         round: round._id,
         [this.groupMessageTimestampField]: null,
+        status: { $in: ["unknown", "scheduled"] },
       });
       for (const group of groups) {
+        // Send the scheduled message.
+
         const text = this.composeMessage(round.channel, group.userIds);
 
-        await rateLimit.wait();
+        await sendRateLimit.wait();
         const sendResult = await send(this.app, group.userIds, text);
 
-        let line = `round=${round._id.toString()} group=${group._id.toString()}: `;
+        let line = `send round=${round._id.toString()} group=${group._id.toString()}: `;
         if (sendResult.ok) {
-          const timestamp = sendResult.value;
-          line += timestamp;
+          const [dmChannel, timestamp] = sendResult.value;
+          line += `${dmChannel} ${timestamp}`;
+
+          if (group.channel === undefined) {
+            group.channel = dmChannel;
+          }
           group[this.groupMessageTimestampField] = timestamp;
           await group.save();
         } else {
@@ -103,6 +132,28 @@ abstract class ScheduledDirectMessageJob extends Job {
           errored = true;
         }
         lines.push(line);
+
+        // Add reaction menu if appropriate for this message.
+        // We don't have retry logic here because it seems too complex to be
+        // worth the effort.
+        if (sendResult.ok && this.includeReactionMenu) {
+          const [dmChannel, timestamp] = sendResult.value;
+
+          await reactRateLimit.wait();
+          const reactResult = await react(
+            this.app,
+            dmChannel,
+            timestamp,
+            reactions
+          );
+
+          if (reactResult.ok) {
+            lines.push("react ok");
+          } else {
+            lines.push(`react err: ${reactResult.error.join(" ")}`);
+            errored = true;
+          }
+        }
       }
     }
 
@@ -117,6 +168,7 @@ class InitialMessageJob extends ScheduledDirectMessageJob {
   readonly roundMessagesScheduledForField = "matchingScheduledFor";
   readonly groupMessageTimestampField = "initialMessageTimestamp";
   readonly composeMessage = composeInitialMessage;
+  readonly includeReactionMenu = false;
 }
 
 class ReminderMessageJob extends ScheduledDirectMessageJob {
@@ -125,6 +177,7 @@ class ReminderMessageJob extends ScheduledDirectMessageJob {
   readonly roundMessagesScheduledForField = "reminderMessageScheduledFor";
   readonly groupMessageTimestampField = "reminderMessageTimestamp";
   readonly composeMessage = composeReminderMessage;
+  readonly includeReactionMenu = true;
 }
 
 class FinalMessageJob extends ScheduledDirectMessageJob {
@@ -133,6 +186,7 @@ class FinalMessageJob extends ScheduledDirectMessageJob {
   readonly roundMessagesScheduledForField = "finalMessageScheduledFor";
   readonly groupMessageTimestampField = "finalMessageTimestamp";
   readonly composeMessage = composeFinalMessage;
+  readonly includeReactionMenu = true;
 }
 
 class SummaryMessageJob extends Job {

@@ -4,6 +4,7 @@ import { App } from "@slack/bolt";
 import mongoose from "mongoose";
 
 import env from "./env";
+import { onReactionAddedToMessage } from "./handlers/reaction";
 import { JobRunner } from "./jobs/runner";
 import { cacheProvider } from "./services/config-cache";
 import { addReaction, getUserInfo } from "./services/slack";
@@ -64,8 +65,12 @@ async function processCommandMessage(
 app.event("reaction_added", async (context) => {
   const { event } = context;
   if (event.item.type === "message") {
-    console.log(
-      `reaction added to message: reaction=${event.reaction}, channel=${event.item.channel}, ts=${event.item.ts}`
+    await onReactionAddedToMessage(
+      app,
+      event.user,
+      event.item.channel,
+      event.item.ts,
+      event.reaction
     );
   }
 });

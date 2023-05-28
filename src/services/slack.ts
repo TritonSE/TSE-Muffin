@@ -269,24 +269,26 @@ async function openDirectMessage(
 /**
  * Send a direct message to the specified users.
  *
- * @returns Ok with the message timestamp, or Err with an error message.
+ * @returns Ok with the channel and message timestamp, or Err with an error
+ * message.
  */
 async function sendDirectMessage(
   app: App,
   userIds: string[],
   text: string
-): Promise<Result<string, string>> {
+): Promise<Result<[string, string], string>> {
   const channelResult = await openDirectMessage(app, userIds);
   if (!channelResult.ok) {
     return Result.Err(`failed to open direct message: ${channelResult.error}`);
   }
+  const channel = channelResult.value;
 
-  const sendMessageResult = await sendMessage(app, channelResult.value, text);
+  const sendMessageResult = await sendMessage(app, channel, text);
   if (!sendMessageResult.ok) {
     return Result.Err(`failed to send message: ${sendMessageResult.error}`);
   }
 
-  return Result.Ok(sendMessageResult.value);
+  return Result.Ok([channel, sendMessageResult.value]);
 }
 
 export {

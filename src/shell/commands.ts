@@ -1,6 +1,7 @@
 import { App, SlackEventMiddlewareArgs } from "@slack/bolt";
 import { DateTime } from "luxon";
 
+import { onReactionAddedToMessage } from "../handlers/reaction";
 import { ConfigDocument } from "../models/ConfigModel";
 import { RoundDocument, RoundModel } from "../models/RoundModel";
 import { cacheProvider } from "../services/config-cache";
@@ -170,6 +171,32 @@ class ReactCommand extends Command {
   }
 }
 
+class ReactSimulateCommand extends Command {
+  static readonly privileged = true;
+  static readonly id = "react_simulate";
+  static readonly help = [
+    `USER CHANNEL TIMESTAMP REACTION`,
+    "simulate USER adding REACTION to the message specified by CHANNEL and TIMESTAMP (developer use only)",
+  ];
+
+  async run() {
+    if (this.args.length !== 4) {
+      return usageErr(ReactSimulateCommand);
+    }
+    const [user, channel, timestamp, reaction] = this.args;
+
+    await onReactionAddedToMessage(
+      this.app,
+      user,
+      channel,
+      timestamp,
+      reaction
+    );
+
+    return Result.Ok(undefined);
+  }
+}
+
 class ReloadConfigCommand extends Command {
   static readonly privileged = true;
   static readonly id = "reload_config";
@@ -284,7 +311,11 @@ class SendDirectMessageCommand extends Command {
     const users = usersJoined.split(",");
     const text = textParts.join(" ");
 
-    return sendDirectMessage(this.app, users, text);
+    const result = await sendDirectMessage(this.app, users, text);
+    if (!result.ok) {
+      return result;
+    }
+    return Result.Ok(result.value.join(" "));
   }
 }
 
@@ -318,6 +349,7 @@ const commandClasses = [
   HelpCommand,
   LsCommand,
   ReactCommand,
+  ReactSimulateCommand,
   ReloadConfigCommand,
   RoundScheduleCommand,
   SendDirectMessageCommand,
