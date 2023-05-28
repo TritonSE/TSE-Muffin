@@ -24,6 +24,11 @@ function formatUser(user: string): string {
   return `<@${user}>`;
 }
 
+function parseUser(user: string): string {
+  const match = /<@([0-9A-Z]+)([|][^>]*)?>/.exec(user);
+  return match !== null ? match[1] : user;
+}
+
 function parseDate(date: string): Result<DateTime, string> {
   const dt = DateTime.fromISO(date, { zone: "utc" });
   if (!dt.isValid) {
@@ -40,5 +45,6 @@ export {
   formatEmoji,
   parseEmoji,
   formatUser,
+  parseUser,
   parseDate,
 };

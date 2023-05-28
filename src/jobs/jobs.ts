@@ -107,6 +107,7 @@ abstract class ScheduledDirectMessageJob extends Job {
       const groups = await GroupModel.find({
         round: round._id,
         [this.groupMessageTimestampField]: null,
+        // Only send messages if we don't know whether they met yet.
         status: { $in: ["unknown", "scheduled"] },
       });
       for (const group of groups) {

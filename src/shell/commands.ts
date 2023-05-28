@@ -18,6 +18,7 @@ import {
   parseChannel,
   parseDate,
   parseEmoji,
+  parseUser,
 } from "../util/formatting";
 import { Result } from "../util/result";
 
@@ -56,7 +57,8 @@ class EditMessageCommand extends Command {
       return usageErr(EditMessageCommand);
     }
 
-    const [channel, message, ...textParts] = this.args;
+    const [rawChannel, message, ...textParts] = this.args;
+    const channel = parseChannel(rawChannel);
     const text = textParts.join(" ");
 
     return editMessage(this.app, channel, message, text);
@@ -183,7 +185,9 @@ class ReactSimulateCommand extends Command {
     if (this.args.length !== 4) {
       return usageErr(ReactSimulateCommand);
     }
-    const [user, channel, timestamp, reaction] = this.args;
+    const [user, rawChannel, timestamp, rawReaction] = this.args;
+    const channel = parseChannel(rawChannel);
+    const reaction = parseEmoji(rawReaction);
 
     await onReactionAddedToMessage(
       this.app,
@@ -271,7 +275,8 @@ class RoundScheduleCommand extends Command {
       return usageErr(RoundScheduleCommand);
     }
 
-    const [channel, startDateArg] = this.args;
+    const [rawChannel, startDateArg] = this.args;
+    const channel = parseChannel(rawChannel);
 
     const config = (await cacheProvider.get(this.app)).config;
 
@@ -308,7 +313,7 @@ class SendDirectMessageCommand extends Command {
     }
 
     const [usersJoined, ...textParts] = this.args;
-    const users = usersJoined.split(",");
+    const users = usersJoined.split(",").map(parseUser);
     const text = textParts.join(" ");
 
     const result = await sendDirectMessage(this.app, users, text);
@@ -329,7 +334,8 @@ class SendMessageCommand extends Command {
       return usageErr(SendMessageCommand);
     }
 
-    const [channel, ...textParts] = this.args;
+    const [rawChannel, ...textParts] = this.args;
+    const channel = parseChannel(rawChannel);
     const text = textParts.join(" ");
 
     return sendMessage(this.app, channel, text);
