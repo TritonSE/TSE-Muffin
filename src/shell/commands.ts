@@ -220,7 +220,7 @@ class RoundScheduleCommand extends Command {
   static readonly id = "round_schedule";
   static readonly help = [
     "CHANNEL [DATE]",
-    "schedule a new round of matches for the users in CHANNEL, which will start on DATE",
+    "schedule a new round of matches for the users in CHANNEL, which will start on DATE (defaults to the end of the previous round)",
   ];
 
   /**
@@ -247,7 +247,7 @@ class RoundScheduleCommand extends Command {
 
       if (round === null) {
         return Result.Err(
-          "start date not provided, and there are no previous rounds for this channel"
+          "start date not provided, and it is required because there are no previous rounds for this channel"
         );
       }
 
@@ -255,6 +255,13 @@ class RoundScheduleCommand extends Command {
       const startDate = DateTime.fromJSDate(round.matchingScheduledFor).plus({
         days: config.roundDurationDays,
       });
+
+      if (startDate.toMillis() < Date.now()) {
+        return Result.Err(
+          "start date not provided, and it is required because the previous round in this channel already ended"
+        );
+      }
+
       return Result.Ok(startDate);
     }
 
