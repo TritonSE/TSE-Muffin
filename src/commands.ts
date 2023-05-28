@@ -8,7 +8,8 @@ import {
   parseDate,
   parseEmoji,
 } from "./formatting";
-import { ConfigDocument, Round, RoundModel } from "./models";
+import { ConfigDocument } from "./models/ConfigModel";
+import { Round, RoundDocument, RoundModel } from "./models/RoundModel";
 import { Result } from "./result";
 import {
   addReaction,
@@ -199,12 +200,39 @@ class RoundScheduleCommand extends Command {
     "schedule a new round of matches for the users in CHANNEL, which will start on DATE",
   ];
 
+  /**
+   * @returns Ok with the start date to use, or Err with an error message.
+   */
   async determineStartDate(
-    startDateArg: string | undefined
+    channel: string,
+    startDateArg: string | undefined,
+    config: ConfigDocument
   ): Promise<Result<DateTime, string>> {
     if (startDateArg === undefined) {
-      // TODO: use the start date of the last round plus roundDurationDays
-      return Result.Err("start date not provided");
+      // Get the most recent round in this channel.
+      let round: RoundDocument | null;
+      try {
+        round = await RoundModel.findOne({ channel }, null, {
+          sort: { matchingScheduledFor: -1 },
+        });
+      } catch (e) {
+        console.error(e);
+        return Result.Err(
+          "unknown error occurred while querying most recent round for channel (check logs)"
+        );
+      }
+
+      if (round === null) {
+        return Result.Err(
+          "start date not provided, and there are no previous rounds for this channel"
+        );
+      }
+
+      // The new round starts when the previous round ends.
+      const startDate = DateTime.fromJSDate(round.matchingScheduledFor).plus({
+        days: config.roundDurationDays,
+      });
+      return Result.Ok(startDate);
     }
 
     const parseResult = parseDate(startDateArg);
@@ -242,13 +270,17 @@ class RoundScheduleCommand extends Command {
 
     const [channel, startDateArg] = this.args;
 
-    const startDateResult = await this.determineStartDate(startDateArg);
+    const config = (await cacheProvider.get(this.app)).config;
+
+    const startDateResult = await this.determineStartDate(
+      channel,
+      startDateArg,
+      config
+    );
     if (!startDateResult.ok) {
       return startDateResult;
     }
     const startDate = startDateResult.value;
-
-    const config = (await cacheProvider.get(this.app)).config;
 
     const reminderMessageScheduledFor = this.calculateScheduled(
       config,

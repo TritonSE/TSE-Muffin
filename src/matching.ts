@@ -3,7 +3,8 @@ import { DateTime } from "luxon";
 import mongoose from "mongoose";
 
 import { cacheProvider } from "./config-cache";
-import { GroupModel, RoundModel } from "./models";
+import { GroupModel } from "./models/GroupModel";
+import { RoundModel } from "./models/RoundModel";
 import { Result } from "./result";
 import { getConversationMembers } from "./wrappers";
 

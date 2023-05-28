@@ -44,6 +44,8 @@ const RoundSchema = new Schema<Round>({
   },
 });
 
+RoundSchema.index({ channel: 1, matchingScheduledFor: 1 });
+
 const RoundModel = model("Round", RoundSchema);
 type RoundDocument = HydratedDocument<Round>;
 

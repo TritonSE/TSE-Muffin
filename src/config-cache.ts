@@ -1,7 +1,7 @@
 import { App } from "@slack/bolt";
 import { Duration } from "luxon";
 
-import { ConfigDocument, ConfigModel } from "./models";
+import { ConfigDocument, ConfigModel } from "./models/ConfigModel";
 import { Result } from "./result";
 import { getBotUserId } from "./wrappers";
 
