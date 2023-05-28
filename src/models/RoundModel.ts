@@ -4,6 +4,9 @@ interface Round {
   /** ID of the channel containing the users to match up. */
   channel: string;
 
+  /** Whether users have been matched into groups. */
+  matchingCompleted: boolean;
+
   /**
    * When to match users into groups and send the initial message for each
    * group.
@@ -26,6 +29,10 @@ const RoundSchema = new Schema<Round>({
     required: true,
     immutable: true,
   },
+  matchingCompleted: {
+    type: Boolean,
+    required: true,
+  },
   matchingScheduledFor: {
     type: Date,
     required: true,
@@ -43,6 +50,8 @@ const RoundSchema = new Schema<Round>({
     required: true,
   },
 });
+
+RoundSchema.index({ matchingCompleted: 1, matchingScheduledFor: 1 });
 
 RoundSchema.index({ channel: 1, matchingScheduledFor: 1 });
 

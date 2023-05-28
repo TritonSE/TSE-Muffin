@@ -47,11 +47,16 @@ class ConfigCache {
   }
 }
 
+interface ConfigCacheObserver {
+  onConfigCacheReload(): void;
+}
+
 /**
  * Manage cache loading and reloading.
  */
 class ConfigCacheProvider {
   private loadingPromise: Promise<ConfigCache> | null = null;
+  private observers: ConfigCacheObserver[] = [];
 
   private async load(app: App): Promise<ConfigCache> {
     const result = await ConfigCache.load(app);
@@ -68,8 +73,15 @@ class ConfigCacheProvider {
     return this.loadingPromise;
   }
 
+  addObserver(listener: ConfigCacheObserver) {
+    this.observers.push(listener);
+  }
+
   async reload(app: App): Promise<ConfigCache> {
     this.loadingPromise = null;
+    for (const listener of this.observers) {
+      listener.onConfigCacheReload();
+    }
     return this.get(app);
   }
 }

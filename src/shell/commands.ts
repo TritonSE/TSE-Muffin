@@ -2,8 +2,9 @@ import { App, SlackEventMiddlewareArgs } from "@slack/bolt";
 import { DateTime } from "luxon";
 
 import { ConfigDocument } from "../models/ConfigModel";
-import { Round, RoundDocument, RoundModel } from "../models/RoundModel";
+import { RoundDocument, RoundModel } from "../models/RoundModel";
 import { cacheProvider } from "../services/config-cache";
+import { createRound } from "../services/round";
 import {
   addReactions,
   editMessage,
@@ -149,8 +150,8 @@ class ReactCommand extends Command {
   static readonly privileged = true;
   static readonly id = "react";
   static readonly help = [
-    `CHANNEL TIMESTAMP REACTION [REACTION]...`,
-    `add each REACTION to the message specified by CHANNEL and TIMESTAMP`,
+    "CHANNEL TIMESTAMP REACTION [REACTION]...",
+    "add each REACTION to the message specified by CHANNEL and TIMESTAMP",
   ];
 
   async run() {
@@ -166,6 +167,20 @@ class ReactCommand extends Command {
     return result.ok
       ? result
       : Result.Err(result.error.map((line) => `react: ${line}`).join("\n"));
+  }
+}
+
+class ReloadConfigCommand extends Command {
+  static readonly privileged = true;
+  static readonly id = "reload_config";
+  static readonly help = [
+    "",
+    "reload the config from the database (developer use only)",
+  ];
+
+  async run() {
+    await cacheProvider.reload(this.app);
+    return Result.Ok(undefined);
   }
 }
 
@@ -224,22 +239,6 @@ class RoundScheduleCommand extends Command {
     return parseResult;
   }
 
-  /**
-   * Calculate the scheduled date for a particular event.
-   */
-  calculateScheduled<
-    K extends
-      | "reminderMessageDelayFactor"
-      | "finalMessageDelayFactor"
-      | "summaryMessageDelayFactor"
-  >(config: ConfigDocument, startDate: DateTime, factorName: K) {
-    return startDate
-      .plus({
-        days: config.roundDurationDays * config[factorName],
-      })
-      .toJSDate();
-  }
-
   async run() {
     if (this.args.length !== 1 && this.args.length !== 2) {
       return usageErr(RoundScheduleCommand);
@@ -259,39 +258,12 @@ class RoundScheduleCommand extends Command {
     }
     const startDate = startDateResult.value;
 
-    const reminderMessageScheduledFor = this.calculateScheduled(
-      config,
-      startDate,
-      "reminderMessageDelayFactor"
-    );
-    const finalMessageScheduledFor = this.calculateScheduled(
-      config,
-      startDate,
-      "finalMessageDelayFactor"
-    );
-    const summaryMessageScheduledFor = this.calculateScheduled(
-      config,
-      startDate,
-      "summaryMessageDelayFactor"
-    );
-
-    const rawRound: Round = {
-      channel,
-      matchingScheduledFor: startDate.toJSDate(),
-      reminderMessageScheduledFor,
-      finalMessageScheduledFor,
-      summaryMessageScheduledFor,
-    };
-
-    try {
-      const round = await RoundModel.create(rawRound);
-      return Result.Ok(round._id.toString());
-    } catch (e) {
-      console.error(e);
-      return Result.Err(
-        "unknown error while creating round in MongoDB (check logs)"
-      );
+    const createRoundResult = await createRound(this.app, channel, startDate);
+    if (!createRoundResult.ok) {
+      return createRoundResult;
     }
+
+    return Result.Ok(createRoundResult.value._id.toString());
   }
 }
 
@@ -346,6 +318,7 @@ const commandClasses = [
   HelpCommand,
   LsCommand,
   ReactCommand,
+  ReloadConfigCommand,
   RoundScheduleCommand,
   SendDirectMessageCommand,
   SendMessageCommand,

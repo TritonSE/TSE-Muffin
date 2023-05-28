@@ -70,4 +70,4 @@ const ConfigSchema = new Schema<Config>({
 const ConfigModel = model("Config", ConfigSchema);
 type ConfigDocument = HydratedDocument<Config>;
 
-export { ConfigModel, ConfigDocument };
+export { Config, ConfigModel, ConfigDocument };

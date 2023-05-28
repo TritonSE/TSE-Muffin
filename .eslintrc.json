@@ -21,6 +21,11 @@
   "plugins": ["@typescript-eslint", "import", "eslint-plugin-tsdoc"],
   "rules": {
     "@typescript-eslint/require-await": "off",
+    "no-constant-condition": ["error", { "checkLoops": false }],
+    "@typescript-eslint/no-unnecessary-condition": [
+      "error",
+      { "allowConstantLoopConditions": true }
+    ],
     "sort-imports": [
       "warn",
       {

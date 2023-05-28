@@ -1,13 +1,13 @@
 import { App } from "@slack/bolt";
-import { DateTime } from "luxon";
 import mongoose from "mongoose";
 
 import { GroupModel } from "../models/GroupModel";
-import { RoundModel } from "../models/RoundModel";
+import { RoundDocument } from "../models/RoundModel";
 import { Result } from "../util/result";
 
 import { cacheProvider } from "./config-cache";
 import { getConversationMembers } from "./slack";
+
 /**
  * @returns Ok with the users that should be matched in this channel, or Err
  * with an error message.
@@ -77,17 +77,14 @@ function makeGroups(users: string[]): string[][] {
 }
 
 /**
- * Create a new round by matching up the eligible users in the specified
+ * Create groups for a round by matching up the eligible users in the specified
  * channel.
  */
-async function createRoundAndMatchUsers(
+async function createGroups(
   app: App,
-  channel: string,
-  initialMessageScheduledFor: DateTime,
-  reminderMessageScheduledFor: DateTime,
-  finalMessageScheduledFor: DateTime
+  round: RoundDocument
 ): Promise<Result<undefined, string>> {
-  const usersResult = await getUsersToMatch(app, channel);
+  const usersResult = await getUsersToMatch(app, round.channel);
   if (!usersResult.ok) {
     return Result.Err(`could not get users to match: ${usersResult.error}`);
   }
@@ -96,12 +93,6 @@ async function createRoundAndMatchUsers(
 
   return mongoose.connection
     .transaction(async () => {
-      const round = await RoundModel.create({
-        initialMessageScheduledFor: initialMessageScheduledFor.toJSDate(),
-        reminderMessageScheduledFor: reminderMessageScheduledFor.toJSDate(),
-        finalMessageScheduledFor: finalMessageScheduledFor.toJSDate(),
-      });
-
       await GroupModel.insertMany(
         groups.map((userIds) => ({
           round: round._id,
@@ -109,6 +100,9 @@ async function createRoundAndMatchUsers(
           status: "unknown",
         }))
       );
+
+      round.matchingCompleted = true;
+      await round.save();
     })
     .then(
       () => Result.Ok(undefined),
@@ -119,4 +113,4 @@ async function createRoundAndMatchUsers(
     );
 }
 
-export { createRoundAndMatchUsers };
+export { createGroups };

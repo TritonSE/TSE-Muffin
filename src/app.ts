@@ -4,6 +4,7 @@ import { App } from "@slack/bolt";
 import mongoose from "mongoose";
 
 import env from "./env";
+import { JobRunner } from "./jobs/runner";
 import { cacheProvider } from "./services/config-cache";
 import { addReaction, getUserInfo } from "./services/slack";
 import { CommandContext, runCommand } from "./shell/commands";
@@ -96,10 +97,6 @@ app.message(async (context) => {
   }
 });
 
-app.error(async (error) => {
-  console.error(error);
-});
-
 async function main() {
   console.log("connecting to MongoDB...");
   await mongoose.connect(env.MONGODB_URI);
@@ -120,6 +117,11 @@ async function main() {
   }
 
   console.log(`bot user ID: ${(await cacheProvider.get(app)).botUserId}`);
+
+  const runner = await JobRunner.create(app);
+  runner.run().catch(console.error);
+  await runner.waitForFirstRun();
+
   shell(app).catch(console.error);
 }
 

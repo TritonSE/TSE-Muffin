@@ -66,8 +66,6 @@ const GroupSchema = new Schema<Group>({
     required: true,
     enum: GROUP_STATUSES,
   },
-  // TODO: when handling reaction events, make sure to get the group with the largest
-  // round ID (most recent).
   channel: {
     type: String,
     required: false,
