@@ -12,7 +12,7 @@ muffin has a Node.js backend and uses MongoDB, so you'll need to provide both of
 
 > You can get a free MongoDB instance through [Atlas](https://www.mongodb.com/atlas/database), and there are many good options for backend hosting. In particular, the [provided Dockerfile](Dockerfile) is known to work on [DigitalOcean App Platform](https://www.digitalocean.com/products/app-platform), which costs $5/month.
 
-## Create a Slack app
+### Create a Slack app
 
 1. [Click here](https://api.slack.com/apps?new_app=1&manifest_json=%7B%22display_information%22%3A%7B%22name%22%3A%22muffin%22%2C%22description%22%3A%22matching%20up%20future%20friends%20inexpensively%22%2C%22background_color%22%3A%22%5Cu0023774400%22%7D%2C%22features%22%3A%7B%22bot_user%22%3A%7B%22display_name%22%3A%22muffin%22%2C%22always_online%22%3Afalse%7D%7D%2C%22oauth_config%22%3A%7B%22scopes%22%3A%7B%22bot%22%3A%5B%22app_mentions%3Aread%22%2C%22channels%3Aread%22%2C%22chat%3Awrite%22%2C%22groups%3Aread%22%2C%22im%3Ahistory%22%2C%22im%3Aread%22%2C%22im%3Awrite%22%2C%22mpim%3Aread%22%2C%22mpim%3Awrite%22%2C%22reactions%3Awrite%22%2C%22users%3Aread%22%2C%22reactions%3Aread%22%5D%7D%7D%2C%22settings%22%3A%7B%22event_subscriptions%22%3A%7B%22request_url%22%3A%22https%3A%2F%2Fexample.com%2Fslack%2Fevents%22%2C%22bot_events%22%3A%5B%22app_mention%22%2C%22message.im%22%2C%22reaction_added%22%2C%22reaction_removed%22%5D%7D%2C%22org_deploy_enabled%22%3Afalse%2C%22socket_mode_enabled%22%3Afalse%2C%22token_rotation_enabled%22%3Afalse%7D%7D) to create a new, pre-configured app in your workspace.
 
