@@ -45,15 +45,8 @@ async function createRound(
     summaryMessageScheduledFor,
   };
 
-  try {
-    const round = await RoundModel.create(rawRound);
-    return Result.Ok(round);
-  } catch (e) {
-    console.error(e);
-    return Result.Err(
-      "unknown error while creating round in MongoDB (check logs)"
-    );
-  }
+  const round = await RoundModel.create(rawRound);
+  return Result.Ok(round);
 }
 
 export { createRound };

@@ -91,26 +91,20 @@ async function createGroups(
 
   const groups = makeGroups(usersResult.value);
 
-  return mongoose.connection
-    .transaction(async () => {
-      await GroupModel.insertMany(
-        groups.map((userIds) => ({
-          round: round._id,
-          userIds,
-          status: "unknown",
-        }))
-      );
-
-      round.matchingCompleted = true;
-      await round.save();
-    })
-    .then(
-      () => Result.Ok(undefined),
-      (e) => {
-        console.error(e);
-        return Result.Err("error in transaction (check logs)");
-      }
+  await mongoose.connection.transaction(async () => {
+    await GroupModel.insertMany(
+      groups.map((userIds) => ({
+        round: round._id,
+        userIds,
+        status: "unknown",
+      }))
     );
+
+    round.matchingCompleted = true;
+    await round.save();
+  });
+
+  return Result.Ok(undefined);
 }
 
 export { createGroups };

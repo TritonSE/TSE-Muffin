@@ -35,18 +35,10 @@ class MatchingJob extends Job {
     "match users into groups for rounds that are scheduled to start";
 
   async run() {
-    let roundsToStart;
-    try {
-      roundsToStart = await RoundModel.find({
-        matchingCompleted: false,
-        matchingScheduledFor: { $lte: new Date() },
-      });
-    } catch (e) {
-      console.error(e);
-      return Result.Err(
-        "unknown error occurred while querying rounds that are scheduled to start (check logs)"
-      );
-    }
+    const roundsToStart = await RoundModel.find({
+      matchingCompleted: false,
+      matchingScheduledFor: { $lte: new Date() },
+    });
 
     const lines: string[] = [];
     let errored = false;
@@ -88,9 +80,9 @@ abstract class ScheduledDirectMessageJob extends Job {
       ? mockSendDirectMessage
       : sendDirectMessage;
 
-    // 300 messages per minute = 5 messages per second.
+    // "Several hundred" messages per minute - assume 300.
     // https://api.slack.com/methods/chat.postMessage#rate_limiting
-    const sendRateLimit = new IntervalTimer(1000 / 5);
+    const sendRateLimit = new IntervalTimer(60000 / 300);
 
     const react = env.MOCK_SCHEDULED_MESSAGES ? mockAddReactions : addReactions;
     const reactions = Object.keys(REACTION_TO_GROUP_STATUS);
@@ -104,12 +96,15 @@ abstract class ScheduledDirectMessageJob extends Job {
     const lines: string[] = [];
     let errored = false;
     for (const round of rounds) {
+      // Find groups for the current round where we haven't sent this scheduled
+      // message yet, and we don't know whether the group met yet. (If we
+      // already know whether the group met, we don't send a message.)
       const groups = await GroupModel.find({
         round: round._id,
         [this.groupMessageTimestampField]: null,
-        // Only send messages if we don't know whether they met yet.
         status: { $in: ["unknown", "scheduled"] },
       });
+
       for (const group of groups) {
         // Send the scheduled message.
 
@@ -200,11 +195,12 @@ class SummaryMessageJob extends Job {
     });
 
     const send = env.MOCK_SCHEDULED_MESSAGES ? mockSendMessage : sendMessage;
-    const rateLimit = new IntervalTimer(200);
+    const rateLimit = new IntervalTimer(60000 / 300);
 
     const lines: string[] = [];
     let errored = false;
     for (const round of rounds) {
+      // Get number of groups with each status for the current round.
       const aggregated: { _id: GroupStatus; count: number }[] =
         await GroupModel.aggregate([
           { $match: { round: round._id } },

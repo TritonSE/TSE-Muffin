@@ -86,7 +86,7 @@ const GroupSchema = new Schema<Group>({
 });
 
 const indexes: { [K in keyof Group]?: 1 }[] = [
-  // Used by scheduled jobs to determine what messages should be sent.
+  // Used to determine what scheduled messages should be sent.
   { round: 1, initialMessageTimestamp: 1, status: 1 },
   { round: 1, reminderMessageTimestamp: 1, status: 1 },
   { round: 1, finalMessageTimestamp: 1, status: 1 },

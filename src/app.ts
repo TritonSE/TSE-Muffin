@@ -96,7 +96,8 @@ app.message(async (context) => {
   if (
     message.channel_type === "im" &&
     message.subtype === undefined &&
-    message.text !== undefined
+    message.text !== undefined &&
+    message.user !== "USLACKBOT"
   ) {
     await processCommandMessage(message.user, message.text, context);
   }

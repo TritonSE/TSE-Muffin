@@ -1,5 +1,4 @@
 import { App } from "@slack/bolt";
-import { Duration } from "luxon";
 
 import { ConfigDocument, ConfigModel } from "../models/ConfigModel";
 import { Result } from "../util/result";
@@ -21,26 +20,21 @@ class ConfigCache {
     }
     const botUserId = botUserIdResult.value;
 
-    let config;
-    try {
-      config = await ConfigModel.findOne();
-      if (config === null) {
-        console.log("config does not exist: creating default config");
-        config = await ConfigModel.create({
-          roundDurationDays: 14,
-          reminderMessageDelayFactor: 0.5,
-          finalMessageDelayFactor: 1.0,
-          summaryMessageDelayFactor: 16 / 14,
-          periodicJobIntervalSec: Duration.fromObject({ hours: 1 }).as(
-            "seconds"
-          ),
-        });
-      }
-    } catch (e) {
-      console.error(e);
-      return Result.Err(
-        "unknown error occurred while loading config from MongoDB"
-      );
+    let config = await ConfigModel.findOne();
+    if (config === null) {
+      console.log("config does not exist: creating default config");
+      config = await ConfigModel.create({
+        // Rounds last two weeks.
+        roundDurationDays: 14,
+        // The first reminder is sent after one week.
+        reminderMessageDelayFactor: 0.5,
+        // The final reminder is sent after two weeks.
+        finalMessageDelayFactor: 1.0,
+        // The summary message is sent after 16 days.
+        summaryMessageDelayFactor: 16 / 14,
+        // Run periodic jobs hourly.
+        periodicJobIntervalSec: 3600,
+      });
     }
 
     console.log(`bot user ID: ${botUserId}`);
