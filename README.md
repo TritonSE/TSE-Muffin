@@ -62,7 +62,7 @@ messages are sent. However, there is currently no user interface for these confi
 Instead, you can update the config document directly in MongoDB. For example, using mongosh to make each round last one week instead of two:
 
 ```js
-db.configs.updateOne({}, {$set: {roundDurationDays: 7}})
+db.configs.updateOne({}, { $set: { roundDurationDays: 7 } });
 ```
 
 After updating the config document, use the `reload_config` command to apply your changes.
