@@ -4,11 +4,12 @@
     "outDir": "dist",
     "lib": ["es2023"],
     "target": "es2022",
-    "module": "Node16",
-    "moduleResolution": "node",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "esModuleInterop": true,
     "types": ["node"],
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "verbatimModuleSyntax": true
   },
   "include": ["src/**/*.ts"]
 }

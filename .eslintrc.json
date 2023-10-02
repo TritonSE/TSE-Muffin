@@ -22,6 +22,7 @@
   "rules": {
     "@typescript-eslint/require-await": "off",
     "no-constant-condition": ["error", { "checkLoops": false }],
+    "import/no-unresolved": "off",
     "@typescript-eslint/no-unnecessary-condition": [
       "error",
       { "allowConstantLoopConditions": true }

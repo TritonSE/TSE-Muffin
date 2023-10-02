@@ -1,16 +1,19 @@
 import { App } from "@slack/bolt";
 
-import { cacheProvider } from "../services/config-cache";
-import { IntervalTimer } from "../util/timer";
+import { cacheProvider } from "../services/config-cache.js";
+import { IntervalTimer } from "../util/timer.js";
 
-import { allJobs } from "./jobs";
+import { allJobs } from "./jobs.js";
 
 class JobRunner {
   private reloadPending = false;
   private firstRun: Promise<void>;
   private firstRunResolve: (() => void) | null = null;
 
-  private constructor(private app: App, private timer: IntervalTimer) {
+  private constructor(
+    private app: App,
+    private timer: IntervalTimer,
+  ) {
     this.firstRun = new Promise((resolve) => {
       this.firstRunResolve = resolve;
     });

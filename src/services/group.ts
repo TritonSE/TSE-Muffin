@@ -1,12 +1,12 @@
 import { App } from "@slack/bolt";
 import mongoose from "mongoose";
 
-import { GroupModel } from "../models/GroupModel";
-import { RoundDocument } from "../models/RoundModel";
-import { Result } from "../util/result";
+import { GroupModel } from "../models/GroupModel.js";
+import { type RoundDocument } from "../models/RoundModel.js";
+import { Result } from "../util/result.js";
 
-import { cacheProvider } from "./config-cache";
-import { getConversationMembers } from "./slack";
+import { cacheProvider } from "./config-cache.js";
+import { getConversationMembers } from "./slack.js";
 
 /**
  * @returns Ok with the users that should be matched in this channel, or Err
@@ -14,7 +14,7 @@ import { getConversationMembers } from "./slack";
  */
 async function getUsersToMatch(
   app: App,
-  channel: string
+  channel: string,
 ): Promise<Result<string[], string>> {
   const getMembersResult = await getConversationMembers(app, channel);
   if (!getMembersResult.ok) {
@@ -82,7 +82,7 @@ function makeGroups(users: string[]): string[][] {
  */
 async function createGroups(
   app: App,
-  round: RoundDocument
+  round: RoundDocument,
 ): Promise<Result<undefined, string>> {
   const usersResult = await getUsersToMatch(app, round.channel);
   if (!usersResult.ok) {
@@ -97,7 +97,7 @@ async function createGroups(
         round: round._id,
         userIds,
         status: "unknown",
-      }))
+      })),
     );
 
     round.matchingCompleted = true;

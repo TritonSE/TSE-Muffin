@@ -1,4 +1,4 @@
-import { HydratedDocument, model, Schema, Types } from "mongoose";
+import { type HydratedDocument, model, Schema, Types } from "mongoose";
 
 const GROUP_STATUSES = ["unknown", "met", "did_not_meet", "scheduled"] as const;
 type GroupStatus = (typeof GROUP_STATUSES)[number];
@@ -96,4 +96,4 @@ indexes.forEach((index) => GroupSchema.index(index));
 const GroupModel = model("Group", GroupSchema);
 type GroupDocument = HydratedDocument<Group>;
 
-export { Group, GroupStatus, GroupModel, GroupDocument };
+export { type Group, type GroupStatus, GroupModel, type GroupDocument };

@@ -11,7 +11,7 @@ function getPort(): number {
 
 function assertEnvVar(
   env: Record<string, string | undefined>,
-  key: string
+  key: string,
 ): string {
   const value = env[key];
   if (typeof value === "string") {
@@ -24,13 +24,13 @@ function assertEnvVar(
       "Refer to the .env.example file for the required environment variables.",
       "If this is a development environment, you can create a local .env file,",
       "using .env.example as a template.",
-    ].join(" ")
+    ].join(" "),
   );
 }
 
 function assertBooleanEnvVar(
   env: Record<string, string | undefined>,
-  key: string
+  key: string,
 ): boolean {
   const value = assertEnvVar(env, key);
   if (value === "true") {
@@ -43,7 +43,7 @@ function assertBooleanEnvVar(
     [
       `Environment variable '${key}' is invalid:`,
       "acceptable values are 'true' and 'false'.",
-    ].join(" ")
+    ].join(" "),
   );
 }
 
@@ -54,7 +54,7 @@ const env = {
   SLACK_SIGNING_SECRET: assertEnvVar(process.env, "SLACK_SIGNING_SECRET"),
   MOCK_SCHEDULED_MESSAGES: assertBooleanEnvVar(
     process.env,
-    "MOCK_SCHEDULED_MESSAGES"
+    "MOCK_SCHEDULED_MESSAGES",
   ),
 } as const;
 

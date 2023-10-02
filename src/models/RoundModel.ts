@@ -1,4 +1,4 @@
-import { HydratedDocument, model, Schema } from "mongoose";
+import { type HydratedDocument, model, Schema } from "mongoose";
 
 interface Round {
   /** ID of the channel containing the users to match up. */
@@ -98,4 +98,4 @@ indexes.forEach((index) => RoundSchema.index(index));
 const RoundModel = model("Round", RoundSchema);
 type RoundDocument = HydratedDocument<Round>;
 
-export { Round, RoundModel, RoundDocument };
+export { type Round, RoundModel, type RoundDocument };

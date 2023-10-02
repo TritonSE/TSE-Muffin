@@ -1,36 +1,40 @@
 import { App } from "@slack/bolt";
 import { DateTime } from "luxon";
 
-import { Config } from "../models/ConfigModel";
-import { Round, RoundDocument, RoundModel } from "../models/RoundModel";
-import { Result } from "../util/result";
+import { type Config } from "../models/ConfigModel.js";
+import {
+  type Round,
+  type RoundDocument,
+  RoundModel,
+} from "../models/RoundModel.js";
+import { Result } from "../util/result.js";
 
-import { cacheProvider } from "./config-cache";
+import { cacheProvider } from "./config-cache.js";
 
 async function createRound(
   app: App,
   channel: string,
-  startDate: DateTime
+  startDate: DateTime,
 ): Promise<Result<RoundDocument, string>> {
   const config = (await cacheProvider.get(app)).config;
 
   // Calculate the scheduled date for a particular event.
   // This lambda is really ugly, but duplicating this three times was uglier.
   const calculateScheduled = <K extends keyof Config & `${string}Factor`>(
-    factor: K
+    factor: K,
   ) =>
     startDate
       .plus({ days: config.roundDurationDays * config[factor] })
       .toJSDate();
 
   const reminderMessageScheduledFor = calculateScheduled(
-    "reminderMessageDelayFactor"
+    "reminderMessageDelayFactor",
   );
   const finalMessageScheduledFor = calculateScheduled(
-    "finalMessageDelayFactor"
+    "finalMessageDelayFactor",
   );
   const summaryMessageScheduledFor = calculateScheduled(
-    "summaryMessageDelayFactor"
+    "summaryMessageDelayFactor",
   );
 
   const rawRound: Round = {

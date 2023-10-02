@@ -3,21 +3,21 @@ import { App } from "@slack/bolt";
 import {
   composeReactionMenuReply,
   REACTION_TO_GROUP_STATUS,
-} from "../dialogue";
-import env from "../env";
-import { GroupModel, GroupStatus } from "../models/GroupModel";
-import { mockSendMessage } from "../services/mock-slack";
-import { sendMessage } from "../services/slack";
+} from "../dialogue.js";
+import env from "../env.js";
+import { GroupModel, type GroupStatus } from "../models/GroupModel.js";
+import { mockSendMessage } from "../services/mock-slack.js";
+import { sendMessage } from "../services/slack.js";
 
 async function onReactionAddedToMessage(
   app: App,
   user: string,
   channel: string,
   timestamp: string,
-  reaction: string
+  reaction: string,
 ): Promise<void> {
   console.log(
-    `reaction added to message: channel=${channel} timestamp=${timestamp} reaction=${reaction}`
+    `reaction added to message: channel=${channel} timestamp=${timestamp} reaction=${reaction}`,
   );
 
   let status: GroupStatus | null = null;
