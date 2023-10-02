@@ -1,26 +1,26 @@
-import { App, type SlackEventMiddlewareArgs } from "@slack/bolt";
+import { App, SlackEventMiddlewareArgs } from "@slack/bolt";
 import { DateTime } from "luxon";
 
-import { onReactionAddedToMessage } from "../handlers/reaction.js";
-import { type ConfigDocument } from "../models/ConfigModel.js";
-import { type RoundDocument, RoundModel } from "../models/RoundModel.js";
-import { cacheProvider } from "../services/config-cache.js";
-import { createRound } from "../services/round.js";
+import { onReactionAddedToMessage } from "../handlers/reaction";
+import { ConfigDocument } from "../models/ConfigModel";
+import { RoundDocument, RoundModel } from "../models/RoundModel";
+import { cacheProvider } from "../services/config-cache";
+import { createRound } from "../services/round";
 import {
   addReactions,
   editMessage,
   getConversationMembers,
   sendDirectMessage,
   sendMessage,
-} from "../services/slack.js";
+} from "../services/slack";
 import {
   formatChannel,
   parseChannel,
   parseDate,
   parseEmoji,
   parseUser,
-} from "../util/formatting.js";
-import { Result } from "../util/result.js";
+} from "../util/formatting";
+import { Result } from "../util/result";
 
 type CommandContext = SlackEventMiddlewareArgs<"app_mention" | "message">;
 
@@ -28,7 +28,7 @@ abstract class Command {
   constructor(
     protected readonly app: App,
     protected readonly args: readonly string[],
-    protected readonly context: CommandContext | null,
+    protected readonly context: CommandContext | null
   ) {}
 
   abstract run(): Promise<Result<string | undefined, string>>;
@@ -111,7 +111,7 @@ class LsCommand extends Command {
     if (this.args.length === 0) {
       if (this.context === null) {
         return Result.Err(
-          `ls: no channel(s) specified and command was not invoked from a channel`,
+          `ls: no channel(s) specified and command was not invoked from a channel`
         );
       }
       // ...use the current channel.
@@ -132,7 +132,7 @@ class LsCommand extends Command {
         lines.push(
           `ls: could not retrieve members of ${formatChannel(channel)}: ${
             membersResult.error
-          }`,
+          }`
         );
         errored = true;
         continue;
@@ -194,7 +194,7 @@ class ReactSimulateCommand extends Command {
       user,
       channel,
       timestamp,
-      reaction,
+      reaction
     );
 
     return Result.Ok(undefined);
@@ -229,7 +229,7 @@ class RoundScheduleCommand extends Command {
   async determineStartDate(
     channel: string,
     startDateArg: string | undefined,
-    config: ConfigDocument,
+    config: ConfigDocument
   ): Promise<Result<DateTime, string>> {
     if (startDateArg === undefined) {
       // Get the most recent round in this channel.
@@ -241,13 +241,13 @@ class RoundScheduleCommand extends Command {
       } catch (e) {
         console.error(e);
         return Result.Err(
-          "unknown error occurred while querying most recent round for channel (check logs)",
+          "unknown error occurred while querying most recent round for channel (check logs)"
         );
       }
 
       if (round === null) {
         return Result.Err(
-          "start date not provided, and it is required because there are no previous rounds for this channel",
+          "start date not provided, and it is required because there are no previous rounds for this channel"
         );
       }
 
@@ -258,7 +258,7 @@ class RoundScheduleCommand extends Command {
 
       if (startDate.toMillis() < Date.now()) {
         return Result.Err(
-          "start date not provided, and it is required because the previous round in this channel already ended",
+          "start date not provided, and it is required because the previous round in this channel already ended"
         );
       }
 
@@ -290,7 +290,7 @@ class RoundScheduleCommand extends Command {
     const startDateResult = await this.determineStartDate(
       channel,
       startDateArg,
-      config,
+      config
     );
     if (!startDateResult.ok) {
       return startDateResult;
@@ -396,7 +396,7 @@ async function runCommand(
   line: string,
   app: App,
   context: CommandContext | null,
-  privileged: boolean,
+  privileged: boolean
 ): Promise<Result<string | undefined, string>> {
   const tryHelp = "(try `help`)";
 
@@ -415,11 +415,11 @@ async function runCommand(
 
   if (cls.privileged && !privileged) {
     return Result.Err(
-      `shell: you must be a Workspace Admin to use this command: ${id}`,
+      `shell: you must be a Workspace Admin to use this command: ${id}`
     );
   }
 
   return new cls(app, args, context).run();
 }
 
-export { Command, type CommandContext, runCommand };
+export { Command, CommandContext, runCommand };

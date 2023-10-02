@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 
-import { Result } from "./result.js";
+import { Result } from "./result";
 
 function formatChannel(channel: string): string {
   return `<#${channel}>`;
@@ -32,6 +32,8 @@ function parseUser(user: string): string {
 function parseDate(date: string): Result<DateTime, string> {
   const dt = DateTime.fromISO(date, { zone: "utc" });
   if (!dt.isValid) {
+    // These fields should be defined if it's not valid.
+    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     return Result.Err(`${dt.invalidReason}: ${dt.invalidExplanation}`);
   }
   return Result.Ok(dt);

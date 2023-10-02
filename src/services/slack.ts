@@ -4,7 +4,7 @@
 
 import { App } from "@slack/bolt";
 
-import { Result } from "../util/result.js";
+import { Result } from "../util/result";
 
 /**
  * If a Slack Web API method throws an error, catch it and return the response
@@ -12,7 +12,7 @@ import { Result } from "../util/result.js";
  * determine if an error occurred, instead of using try/catch.
  */
 async function catchWrapper<R extends { ok: boolean }>(
-  promise: Promise<R>,
+  promise: Promise<R>
 ): Promise<R> {
   try {
     return await promise;
@@ -62,7 +62,7 @@ async function getBotUserId(app: App): Promise<Result<string, string>> {
  */
 async function getConversationMembers(
   app: App,
-  channel: string,
+  channel: string
 ): Promise<Result<string[], string>> {
   const members: string[] = [];
 
@@ -100,7 +100,7 @@ type User = Exclude<
  */
 async function getUserInfo(
   app: App,
-  user: string,
+  user: string
 ): Promise<Result<User, string>> {
   const response = await catchWrapper(app.client.users.info({ user }));
 
@@ -126,14 +126,14 @@ async function addReaction(
   app: App,
   channel: string,
   timestamp: string,
-  reaction: string,
+  reaction: string
 ): Promise<Result<undefined, string>> {
   const response = await catchWrapper(
     app.client.reactions.add({
       channel,
       timestamp,
       name: reaction,
-    }),
+    })
   );
 
   if (!response.ok) {
@@ -165,7 +165,7 @@ async function addReactions(
   app: App,
   channel: string,
   timestamp: string,
-  reactions: string[],
+  reactions: string[]
 ): Promise<Result<undefined, string[]>> {
   const lines: string[] = [];
   for (const reaction of reactions) {
@@ -189,13 +189,13 @@ async function addReactions(
 async function sendMessage(
   app: App,
   channel: string,
-  text: string,
+  text: string
 ): Promise<Result<string, string>> {
   const response = await catchWrapper(
     app.client.chat.postMessage({
       channel,
       text,
-    }),
+    })
   );
 
   if (!response.ok) {
@@ -220,14 +220,14 @@ async function editMessage(
   app: App,
   channel: string,
   timestamp: string,
-  text: string,
+  text: string
 ): Promise<Result<undefined, string>> {
   const response = await catchWrapper(
     app.client.chat.update({
       channel,
       ts: timestamp,
       text,
-    }),
+    })
   );
 
   if (!response.ok) {
@@ -245,12 +245,12 @@ async function editMessage(
  */
 async function openDirectMessage(
   app: App,
-  userIds: string[],
+  userIds: string[]
 ): Promise<Result<string, string>> {
   const response = await catchWrapper(
     app.client.conversations.open({
       users: userIds.join(","),
-    }),
+    })
   );
 
   if (!response.ok) {
@@ -275,7 +275,7 @@ async function openDirectMessage(
 async function sendDirectMessage(
   app: App,
   userIds: string[],
-  text: string,
+  text: string
 ): Promise<Result<[string, string], string>> {
   const channelResult = await openDirectMessage(app, userIds);
   if (!channelResult.ok) {

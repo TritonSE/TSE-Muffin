@@ -1,8 +1,8 @@
 import { App } from "@slack/bolt";
 
-import { Result } from "../util/result.js";
+import { Result } from "../util/result";
 
-import { addReactions, sendDirectMessage, sendMessage } from "./slack.js";
+import { addReactions, sendDirectMessage, sendMessage } from "./slack";
 
 class FakeTimestampGenerator {
   private lastEpochMs = 0;
@@ -58,10 +58,10 @@ const mockAddReactions: typeof addReactions = async (
   _app: App,
   channel: string,
   timestamp: string,
-  reactions: string[],
+  reactions: string[]
 ) => {
   console.log(
-    `mock reactions to ${channel} ${timestamp}: ${reactions.join(", ")}`,
+    `mock reactions to ${channel} ${timestamp}: ${reactions.join(", ")}`
   );
   return Result.Ok(undefined);
 };
@@ -69,7 +69,7 @@ const mockAddReactions: typeof addReactions = async (
 const mockSendMessage: typeof sendMessage = async (
   _app: App,
   channel: string,
-  text: string,
+  text: string
 ) => {
   console.log(`mock message to ${channel}: ${text}`);
   return Result.Ok(fakeTimestampGenerator.get());
@@ -78,7 +78,7 @@ const mockSendMessage: typeof sendMessage = async (
 const mockSendDirectMessage: typeof sendDirectMessage = async (
   _app: App,
   userIds: string[],
-  text: string,
+  text: string
 ) => {
   console.log(`mock direct message to ${userIds.join(",")}: ${text}`);
   return Result.Ok([

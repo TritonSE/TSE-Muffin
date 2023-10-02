@@ -1,21 +1,21 @@
 import { App } from "@slack/bolt";
 
-import { type ConfigDocument, ConfigModel } from "../models/ConfigModel.js";
-import { Result } from "../util/result.js";
+import { ConfigDocument, ConfigModel } from "../models/ConfigModel";
+import { Result } from "../util/result";
 
-import { getBotUserId } from "./slack.js";
+import { getBotUserId } from "./slack";
 
 class ConfigCache {
   constructor(
     public readonly botUserId: string,
-    public readonly config: ConfigDocument,
+    public readonly config: ConfigDocument
   ) {}
 
   static async load(app: App): Promise<Result<ConfigCache, string>> {
     const botUserIdResult = await getBotUserId(app);
     if (!botUserIdResult.ok) {
       return Result.Err(
-        `could not determine bot user ID: ${botUserIdResult.error}`,
+        `could not determine bot user ID: ${botUserIdResult.error}`
       );
     }
     const botUserId = botUserIdResult.value;

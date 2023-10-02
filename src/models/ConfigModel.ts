@@ -1,4 +1,4 @@
-import { type HydratedDocument, model, Schema } from "mongoose";
+import { HydratedDocument, model, Schema } from "mongoose";
 
 interface Config {
   /**
@@ -70,4 +70,4 @@ const ConfigSchema = new Schema<Config>({
 const ConfigModel = model("Config", ConfigSchema);
 type ConfigDocument = HydratedDocument<Config>;
 
-export { type Config, ConfigModel, type ConfigDocument };
+export { Config, ConfigModel, ConfigDocument };

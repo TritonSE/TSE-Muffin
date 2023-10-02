@@ -6,27 +6,23 @@ import {
   composeReminderMessage,
   composeSummaryMessage,
   REACTION_TO_GROUP_STATUS,
-} from "../dialogue.js";
-import env from "../env.js";
-import {
-  type Group,
-  GroupModel,
-  type GroupStatus,
-} from "../models/GroupModel.js";
-import { type Round, RoundModel } from "../models/RoundModel.js";
-import { createGroups } from "../services/group.js";
+} from "../dialogue";
+import env from "../env";
+import { Group, GroupModel, GroupStatus } from "../models/GroupModel";
+import { Round, RoundModel } from "../models/RoundModel";
+import { createGroups } from "../services/group";
 import {
   mockAddReactions,
   mockSendDirectMessage,
   mockSendMessage,
-} from "../services/mock-slack.js";
+} from "../services/mock-slack";
 import {
   addReactions,
   sendDirectMessage,
   sendMessage,
-} from "../services/slack.js";
-import { Result } from "../util/result.js";
-import { IntervalTimer } from "../util/timer.js";
+} from "../services/slack";
+import { Result } from "../util/result";
+import { IntervalTimer } from "../util/timer";
 
 abstract class Job {
   constructor(protected readonly app: App) {}
@@ -144,7 +140,7 @@ abstract class ScheduledDirectMessageJob extends Job {
             this.app,
             dmChannel,
             timestamp,
-            reactions,
+            reactions
           );
 
           if (reactResult.ok) {
@@ -218,7 +214,7 @@ class SummaryMessageJob extends Job {
           met: 0,
           did_not_meet: 0,
           scheduled: 0,
-        },
+        }
       );
 
       const met = counts.met + counts.scheduled;

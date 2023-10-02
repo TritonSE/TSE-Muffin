@@ -1,5 +1,5 @@
-import { type GroupStatus } from "./models/GroupModel.js";
-import { formatChannel, formatEmoji, formatUser } from "./util/formatting.js";
+import { GroupStatus } from "./models/GroupModel";
+import { formatChannel, formatEmoji, formatUser } from "./util/formatting";
 
 // The order of object keys matters here, because we use the same order when we
 // add reactions to messages.
@@ -17,7 +17,7 @@ const GROUP_STATUS_TO_REACTION = {
   // Janky type stuff to enforce that this object is the same as the one above,
   // but with the keys and values swapped.
   {
-    [Reaction in keyof typeof REACTION_TO_GROUP_STATUS]: {
+    [Reaction in keyof typeof REACTION_TO_GROUP_STATUS & string]: {
       [K in (typeof REACTION_TO_GROUP_STATUS)[Reaction]]: Reaction;
     };
   }[keyof typeof REACTION_TO_GROUP_STATUS]
@@ -85,7 +85,7 @@ function composeSummaryMessage(met: number, total: number): string {
 
 function composeReactionMenuReply(
   user: string,
-  status: Exclude<GroupStatus, "unknown">,
+  status: Exclude<GroupStatus, "unknown">
 ): string {
   const youSaid = `${formatUser(user)} said`;
 
