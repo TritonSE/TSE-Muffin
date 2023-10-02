@@ -10,7 +10,10 @@ class JobRunner {
   private firstRun: Promise<void>;
   private firstRunResolve: (() => void) | null = null;
 
-  private constructor(private app: App, private timer: IntervalTimer) {
+  private constructor(
+    private app: App,
+    private timer: IntervalTimer,
+  ) {
     this.firstRun = new Promise((resolve) => {
       this.firstRunResolve = resolve;
     });

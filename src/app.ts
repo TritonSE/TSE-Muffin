@@ -21,7 +21,7 @@ const app = new App({
 async function processCommandMessage(
   user: string | null,
   text: string,
-  context: CommandContext
+  context: CommandContext,
 ) {
   const { event, say } = context;
 
@@ -34,7 +34,7 @@ async function processCommandMessage(
       privileged = userInfoResult.value.is_admin ?? false;
     } else {
       console.error(
-        `shell: could not determine privilege: ${userInfoResult.error}`
+        `shell: could not determine privilege: ${userInfoResult.error}`,
       );
     }
   }
@@ -52,7 +52,7 @@ async function processCommandMessage(
       app,
       event.channel,
       event.ts,
-      result.ok ? "white_check_mark" : "x"
+      result.ok ? "white_check_mark" : "x",
     ),
   ];
   if (typeof reply === "string") {
@@ -64,15 +64,13 @@ async function processCommandMessage(
 
 app.event("reaction_added", async (context) => {
   const { event } = context;
-  if (event.item.type === "message") {
-    await onReactionAddedToMessage(
-      app,
-      event.user,
-      event.item.channel,
-      event.item.ts,
-      event.reaction
-    );
-  }
+  await onReactionAddedToMessage(
+    app,
+    event.user,
+    event.item.channel,
+    event.item.ts,
+    event.reaction,
+  );
 });
 
 app.event("app_mention", async (context) => {

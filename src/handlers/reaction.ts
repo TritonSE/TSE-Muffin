@@ -14,10 +14,10 @@ async function onReactionAddedToMessage(
   user: string,
   channel: string,
   timestamp: string,
-  reaction: string
+  reaction: string,
 ): Promise<void> {
   console.log(
-    `reaction added to message: channel=${channel} timestamp=${timestamp} reaction=${reaction}`
+    `reaction added to message: channel=${channel} timestamp=${timestamp} reaction=${reaction}`,
   );
 
   let status: GroupStatus | null = null;

@@ -4,8 +4,8 @@
     "outDir": "dist",
     "lib": ["es2023"],
     "target": "es2022",
-    "module": "Node16",
-    "moduleResolution": "node",
+    "module": "commonjs",
+    "moduleResolution": "node10",
     "esModuleInterop": true,
     "types": ["node"],
     "forceConsistentCasingInFileNames": true

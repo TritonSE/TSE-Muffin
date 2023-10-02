@@ -140,7 +140,7 @@ abstract class ScheduledDirectMessageJob extends Job {
             this.app,
             dmChannel,
             timestamp,
-            reactions
+            reactions,
           );
 
           if (reactResult.ok) {
@@ -214,7 +214,7 @@ class SummaryMessageJob extends Job {
           met: 0,
           did_not_meet: 0,
           scheduled: 0,
-        }
+        },
       );
 
       const met = counts.met + counts.scheduled;

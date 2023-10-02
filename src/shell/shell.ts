@@ -18,7 +18,7 @@ async function shell(app: App) {
   setBlankPrompt();
 
   console.log(
-    "shell: welcome to muffin interactive shell! (use `help` for help)"
+    "shell: welcome to muffin interactive shell! (use `help` for help)",
   );
   rl.prompt();
 
@@ -53,7 +53,7 @@ async function shell(app: App) {
   }
 
   console.log(
-    "shell: stdin closed: this interactive shell will exit, but muffin will continue to serve network requests"
+    "shell: stdin closed: this interactive shell will exit, but muffin will continue to serve network requests",
   );
 }
 
