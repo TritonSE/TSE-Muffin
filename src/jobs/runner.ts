@@ -7,17 +7,11 @@ import { allJobs } from "./jobs";
 
 class JobRunner {
   private reloadPending = false;
-  private firstRun: Promise<void>;
-  private firstRunResolve: (() => void) | null = null;
 
   private constructor(
     private app: App,
-    private timer: IntervalTimer,
-  ) {
-    this.firstRun = new Promise((resolve) => {
-      this.firstRunResolve = resolve;
-    });
-  }
+    public timer: IntervalTimer,
+  ) {}
 
   static async create(app: App): Promise<JobRunner> {
     const timer = await JobRunner.getTimer(app);
@@ -42,48 +36,35 @@ class JobRunner {
     return new IntervalTimer(intervalMs, startMs);
   }
 
-  async run(): Promise<never> {
-    while (true) {
-      console.log(`running scheduled jobs: ${new Date().toISOString()}`);
+  async run(): Promise<void> {
+    console.log(`running scheduled jobs: ${new Date().toISOString()}`);
 
-      for (const cls of allJobs) {
-        const job = new cls(this.app);
-        console.log(`running job: ${cls.description}`);
+    for (const cls of allJobs) {
+      const job = new cls(this.app);
+      console.log(`running job: ${cls.description}`);
 
-        let result;
-        try {
-          result = await job.run();
-        } catch (e) {
-          console.error(e);
-          console.log("(err)");
-          continue;
-        }
-
-        if (result.ok) {
-          console.log(result.value);
-          console.log("(ok)");
-        } else {
-          console.log(result.error);
-          console.log("(err)");
-        }
+      let result;
+      try {
+        result = await job.run();
+      } catch (e) {
+        console.error(e);
+        console.log("(err)");
+        continue;
       }
 
-      if (this.firstRunResolve !== null) {
-        this.firstRunResolve();
-        this.firstRunResolve = null;
+      if (result.ok) {
+        console.log(result.value);
+        console.log("(ok)");
+      } else {
+        console.log(result.error);
+        console.log("(err)");
       }
-
-      if (this.reloadPending) {
-        await this.reload();
-        this.reloadPending = false;
-      }
-
-      await this.timer.wait();
     }
-  }
 
-  async waitForFirstRun(): Promise<void> {
-    return this.firstRun;
+    if (this.reloadPending) {
+      await this.reload();
+      this.reloadPending = false;
+    }
   }
 
   onConfigCacheReload() {

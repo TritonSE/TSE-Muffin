@@ -121,10 +121,14 @@ async function main() {
   }
 
   const runner = await JobRunner.create(app);
-  runner.run().catch(console.error);
-  await runner.waitForFirstRun();
+  await runner.run();
 
   shell(app).catch(console.error);
+
+  while (true) {
+    await runner.timer.wait();
+    await runner.run();
+  }
 }
 
 main().catch(console.error);
