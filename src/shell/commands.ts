@@ -40,7 +40,7 @@ class EchoCommand extends Command {
   static readonly help = ["[ARG]...", "display each ARG"];
 
   async run() {
-    return Result.Ok(`${this.args.join(" ")}`);
+    return Result.ok(`${this.args.join(" ")}`);
   }
 }
 
@@ -93,7 +93,7 @@ class HelpCommand extends Command {
     }
 
     const joined = lines.join("\n");
-    return errored ? Result.Err(joined) : Result.Ok(joined);
+    return errored ? Result.err(joined) : Result.ok(joined);
   }
 }
 
@@ -110,7 +110,7 @@ class LsCommand extends Command {
     // If no channels were specified...
     if (this.args.length === 0) {
       if (this.context === null) {
-        return Result.Err(
+        return Result.err(
           `ls: no channel(s) specified and command was not invoked from a channel`,
         );
       }
@@ -145,7 +145,7 @@ class LsCommand extends Command {
     }
 
     const joined = lines.join("\n");
-    return errored ? Result.Err(joined) : Result.Ok(joined);
+    return errored ? Result.err(joined) : Result.ok(joined);
   }
 }
 
@@ -169,7 +169,7 @@ class ReactCommand extends Command {
 
     return result.ok
       ? result
-      : Result.Err(result.error.map((line) => `react: ${line}`).join("\n"));
+      : Result.err(result.error.map((line) => `react: ${line}`).join("\n"));
   }
 }
 
@@ -197,7 +197,7 @@ class ReactSimulateCommand extends Command {
       reaction,
     );
 
-    return Result.Ok(undefined);
+    return Result.ok(undefined);
   }
 }
 
@@ -211,7 +211,7 @@ class ReloadConfigCommand extends Command {
 
   async run() {
     await cacheProvider.reload(this.app);
-    return Result.Ok(undefined);
+    return Result.ok(undefined);
   }
 }
 
@@ -240,13 +240,13 @@ class RoundScheduleCommand extends Command {
         });
       } catch (e) {
         console.error(e);
-        return Result.Err(
+        return Result.err(
           "unknown error occurred while querying most recent round for channel (check logs)",
         );
       }
 
       if (round === null) {
-        return Result.Err(
+        return Result.err(
           "start date not provided, and it is required because there are no previous rounds for this channel",
         );
       }
@@ -257,21 +257,21 @@ class RoundScheduleCommand extends Command {
       });
 
       if (startDate.toMillis() < Date.now()) {
-        return Result.Err(
+        return Result.err(
           "start date not provided, and it is required because the previous round in this channel already ended",
         );
       }
 
-      return Result.Ok(startDate);
+      return Result.ok(startDate);
     }
 
     const parseResult = parseDate(startDateArg);
     if (!parseResult.ok) {
-      return Result.Err(`failed to parse start date: ${parseResult.error}`);
+      return Result.err(`failed to parse start date: ${parseResult.error}`);
     }
 
     if (parseResult.value.toMillis() < Date.now()) {
-      return Result.Err("start date is in the past");
+      return Result.err("start date is in the past");
     }
 
     return parseResult;
@@ -302,7 +302,7 @@ class RoundScheduleCommand extends Command {
       return createRoundResult;
     }
 
-    return Result.Ok(createRoundResult.value._id.toString());
+    return Result.ok(createRoundResult.value._id.toString());
   }
 }
 
@@ -327,7 +327,7 @@ class SendDirectMessageCommand extends Command {
     if (!result.ok) {
       return result;
     }
-    return Result.Ok(result.value.join(" "));
+    return Result.ok(result.value.join(" "));
   }
 }
 
@@ -378,7 +378,7 @@ function helpText(cls: CommandClass) {
 }
 
 function usageErr(cls: CommandClass) {
-  return Result.Err(`usage: ${helpText(cls)}`);
+  return Result.err(`usage: ${helpText(cls)}`);
 }
 
 // Map command IDs to classes.
@@ -402,7 +402,7 @@ async function runCommand(
 
   const tokens = line.split(/\s+/).filter((t) => t.length > 0);
   if (tokens.length < 1) {
-    return Result.Err(`shell: no command specified ${tryHelp}`);
+    return Result.err(`shell: no command specified ${tryHelp}`);
   }
 
   const id = tokens[0];
@@ -410,11 +410,11 @@ async function runCommand(
 
   const cls = commandClassesById[id];
   if (cls === undefined) {
-    return Result.Err(`shell: command not found: ${id} ${tryHelp}`);
+    return Result.err(`shell: command not found: ${id} ${tryHelp}`);
   }
 
   if (cls.privileged && !privileged) {
-    return Result.Err(
+    return Result.err(
       `shell: you must be a Workspace Admin to use this command: ${id}`,
     );
   }

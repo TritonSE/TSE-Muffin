@@ -25,7 +25,7 @@ async function getUsersToMatch(
   const botUserId = (await cacheProvider.get(app)).botUserId;
   const filtered = getMembersResult.value.filter((user) => user !== botUserId);
 
-  return Result.Ok(filtered);
+  return Result.ok(filtered);
 }
 
 /**
@@ -86,7 +86,7 @@ async function createGroups(
 ): Promise<Result<undefined, string>> {
   const usersResult = await getUsersToMatch(app, round.channel);
   if (!usersResult.ok) {
-    return Result.Err(`could not get users to match: ${usersResult.error}`);
+    return Result.err(`could not get users to match: ${usersResult.error}`);
   }
 
   const groups = makeGroups(usersResult.value);
@@ -104,7 +104,7 @@ async function createGroups(
     await round.save();
   });
 
-  return Result.Ok(undefined);
+  return Result.ok(undefined);
 }
 
 export { createGroups };

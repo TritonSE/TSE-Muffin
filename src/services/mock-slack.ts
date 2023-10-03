@@ -63,7 +63,7 @@ const mockAddReactions: typeof addReactions = async (
   console.log(
     `mock reactions to ${channel} ${timestamp}: ${reactions.join(", ")}`,
   );
-  return Result.Ok(undefined);
+  return Result.ok(undefined);
 };
 
 const mockSendMessage: typeof sendMessage = async (
@@ -72,7 +72,7 @@ const mockSendMessage: typeof sendMessage = async (
   text: string,
 ) => {
   console.log(`mock message to ${channel}: ${text}`);
-  return Result.Ok(fakeTimestampGenerator.get());
+  return Result.ok(fakeTimestampGenerator.get());
 };
 
 const mockSendDirectMessage: typeof sendDirectMessage = async (
@@ -81,7 +81,7 @@ const mockSendDirectMessage: typeof sendDirectMessage = async (
   text: string,
 ) => {
   console.log(`mock direct message to ${userIds.join(",")}: ${text}`);
-  return Result.Ok([
+  return Result.ok([
     fakeChannelGenerator.get(userIds),
     fakeTimestampGenerator.get(),
   ]);

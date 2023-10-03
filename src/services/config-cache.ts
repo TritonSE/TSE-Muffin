@@ -14,7 +14,7 @@ class ConfigCache {
   static async load(app: App): Promise<Result<ConfigCache, string>> {
     const botUserIdResult = await getBotUserId(app);
     if (!botUserIdResult.ok) {
-      return Result.Err(
+      return Result.err(
         `could not determine bot user ID: ${botUserIdResult.error}`,
       );
     }
@@ -40,7 +40,7 @@ class ConfigCache {
     console.log(`bot user ID: ${botUserId}`);
     console.log(`loaded config: ${JSON.stringify(config.toJSON())}`);
 
-    return Result.Ok(new ConfigCache(botUserId, config));
+    return Result.ok(new ConfigCache(botUserId, config));
   }
 }
 

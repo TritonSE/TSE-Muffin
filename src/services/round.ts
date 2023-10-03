@@ -46,7 +46,7 @@ async function createRound(
   };
 
   const round = await RoundModel.create(rawRound);
-  return Result.Ok(round);
+  return Result.ok(round);
 }
 
 export { createRound };

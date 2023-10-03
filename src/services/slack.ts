@@ -43,16 +43,16 @@ async function getBotUserId(app: App): Promise<Result<string, string>> {
   const response = await catchWrapper(app.client.auth.test());
 
   if (!response.ok) {
-    return Result.Err(response.error ?? "unknown error");
+    return Result.err(response.error ?? "unknown error");
   }
 
   if (typeof response.user_id !== "string") {
     const message = "user_id is missing from auth.test response";
     console.error(message, response);
-    return Result.Err(message);
+    return Result.err(message);
   }
 
-  return Result.Ok(response.user_id);
+  return Result.ok(response.user_id);
 }
 
 /**
@@ -75,7 +75,7 @@ async function getConversationMembers(
     const response = await catchWrapper(promise);
 
     if (!response.ok) {
-      return Result.Err(response.error ?? "unknown error");
+      return Result.err(response.error ?? "unknown error");
     }
 
     if (response.members) {
@@ -85,7 +85,7 @@ async function getConversationMembers(
     cursor = response.response_metadata?.next_cursor;
   } while (cursor);
 
-  return Result.Ok(members);
+  return Result.ok(members);
 }
 
 type User = Exclude<
@@ -105,16 +105,16 @@ async function getUserInfo(
   const response = await catchWrapper(app.client.users.info({ user }));
 
   if (!response.ok) {
-    return Result.Err(response.error ?? "unknown error");
+    return Result.err(response.error ?? "unknown error");
   }
 
   if (response.user === undefined) {
     const message = "user is missing from users.info response";
     console.error(message, response);
-    return Result.Err(message);
+    return Result.err(message);
   }
 
-  return Result.Ok(response.user);
+  return Result.ok(response.user);
 }
 
 /**
@@ -137,10 +137,10 @@ async function addReaction(
   );
 
   if (!response.ok) {
-    return Result.Err(response.error ?? "unknown error");
+    return Result.err(response.error ?? "unknown error");
   }
 
-  return Result.Ok(undefined);
+  return Result.ok(undefined);
 }
 
 // If any of these errors are encountered when adding a reaction, don't
@@ -179,7 +179,7 @@ async function addReactions(
     }
   }
 
-  return lines.length === 0 ? Result.Ok(undefined) : Result.Err(lines);
+  return lines.length === 0 ? Result.ok(undefined) : Result.err(lines);
 }
 
 /**
@@ -199,16 +199,16 @@ async function sendMessage(
   );
 
   if (!response.ok) {
-    return Result.Err(response.error ?? "unknown error");
+    return Result.err(response.error ?? "unknown error");
   }
 
   if (response.ts === undefined) {
     const message = "ts is missing from chat.postMessage response";
     console.error(message, response);
-    return Result.Err(message);
+    return Result.err(message);
   }
 
-  return Result.Ok(response.ts);
+  return Result.ok(response.ts);
 }
 
 /**
@@ -231,10 +231,10 @@ async function editMessage(
   );
 
   if (!response.ok) {
-    return Result.Err(response.error ?? "unknown error");
+    return Result.err(response.error ?? "unknown error");
   }
 
-  return Result.Ok(undefined);
+  return Result.ok(undefined);
 }
 
 /**
@@ -254,16 +254,16 @@ async function openDirectMessage(
   );
 
   if (!response.ok) {
-    return Result.Err(response.error ?? "unknown error");
+    return Result.err(response.error ?? "unknown error");
   }
 
   if (response.channel?.id === undefined) {
     const message = "channel.id is missing from conversations.open response";
     console.error(message, response);
-    return Result.Err(message);
+    return Result.err(message);
   }
 
-  return Result.Ok(response.channel.id);
+  return Result.ok(response.channel.id);
 }
 
 /**
@@ -279,16 +279,16 @@ async function sendDirectMessage(
 ): Promise<Result<[string, string], string>> {
   const channelResult = await openDirectMessage(app, userIds);
   if (!channelResult.ok) {
-    return Result.Err(`failed to open direct message: ${channelResult.error}`);
+    return Result.err(`failed to open direct message: ${channelResult.error}`);
   }
   const channel = channelResult.value;
 
   const sendMessageResult = await sendMessage(app, channel, text);
   if (!sendMessageResult.ok) {
-    return Result.Err(`failed to send message: ${sendMessageResult.error}`);
+    return Result.err(`failed to send message: ${sendMessageResult.error}`);
   }
 
-  return Result.Ok([channel, sendMessageResult.value]);
+  return Result.ok([channel, sendMessageResult.value]);
 }
 
 export {

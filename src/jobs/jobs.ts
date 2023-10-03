@@ -57,7 +57,7 @@ class MatchingJob extends Job {
     }
 
     const joined = lines.join("\n");
-    return errored ? Result.Err(joined) : Result.Ok(joined);
+    return errored ? Result.err(joined) : Result.ok(joined);
   }
 }
 
@@ -154,7 +154,7 @@ abstract class ScheduledDirectMessageJob extends Job {
     }
 
     const joined = lines.join("\n");
-    return errored ? Result.Err(joined) : Result.Ok(joined);
+    return errored ? Result.err(joined) : Result.ok(joined);
   }
 }
 
@@ -239,7 +239,7 @@ class SummaryMessageJob extends Job {
     }
 
     const joined = lines.join("\n");
-    return errored ? Result.Err(joined) : Result.Ok(joined);
+    return errored ? Result.err(joined) : Result.ok(joined);
   }
 }
 

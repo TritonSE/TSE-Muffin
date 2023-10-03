@@ -1,11 +1,11 @@
 abstract class ResultClass {
   abstract readonly ok: boolean;
 
-  static Ok<T>(value: T): Ok<T> {
+  static ok<T>(value: T): Ok<T> {
     return new Ok(value);
   }
 
-  static Err<E>(error: E): Err<E> {
+  static err<E>(error: E): Err<E> {
     return new Err(error);
   }
 }

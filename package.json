@@ -2,7 +2,6 @@
   "name": "muffin",
   "version": "1.0.0",
   "license": "MIT",
-  "main": "dist/app.js",
   "scripts": {
     "build": "rm -rf dist && mkdir -p dist && tsc",
     "lint": "eslint --cache --report-unused-disable-directives . && prettier --check .",

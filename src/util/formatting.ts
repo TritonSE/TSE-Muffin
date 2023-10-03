@@ -32,11 +32,9 @@ function parseUser(user: string): string {
 function parseDate(date: string): Result<DateTime, string> {
   const dt = DateTime.fromISO(date, { zone: "utc" });
   if (!dt.isValid) {
-    // These fields should be defined if it's not valid.
-
-    return Result.Err(`${dt.invalidReason}: ${dt.invalidExplanation}`);
+    return Result.err(`${dt.invalidReason}: ${dt.invalidExplanation}`);
   }
-  return Result.Ok(dt);
+  return Result.ok(dt);
 }
 
 export {
