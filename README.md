@@ -47,24 +47,11 @@ If you send muffin the word "help" as a direct message, it should react to your 
 To schedule pairings, use the following command:
 
 ```
-round_schedule #my-channel 2023-06-05T10:00:00-0700
+round_schedule #my-channel 2023-06-05T10:00:00-0700 2w
 ```
 
 Everyone in that channel will be paired up at the specified date and time. This is an ISO 8601 date string; be sure to replace `-0700` with the offset of your time zone.
 
-You can repeat this command with different dates (and even channels) to schedule as many rounds as you like. If you omit the date, muffin will schedule a round that starts after the previous round ends.
+`2w` specifies a duration of two weeks. Also try days (`4d`) or even hours and minutes (`1h10m`).
 
-## Configuration
-
-muffin allows you to customize how long each round lasts, and when the various
-messages are sent. However, there is currently no user interface for these config options.
-
-Instead, you can update the config document directly in MongoDB. For example, using mongosh to make each round last one week instead of two:
-
-```js
-db.configs.updateOne({}, { $set: { roundDurationDays: 7 } });
-```
-
-After updating the config document, use the `reload_config` command to apply your changes.
-
-See [ConfigModel.ts](src/models/ConfigModel.ts) for the available config options.
+You can repeat this command with different dates (and even channels) to schedule as many rounds as you like. If you're scheduling multiple consecutive rounds in the same channel, you can schedule the first one as usual, then use `round_repeat #my-channel`.

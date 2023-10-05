@@ -1,32 +1,21 @@
 import { App } from "@slack/bolt";
 
-import { cacheProvider } from "../services/config-cache";
 import { IntervalTimer } from "../util/timer";
 
 import { allJobs } from "./jobs";
 
 class JobRunner {
-  private reloadPending = false;
+  timer: IntervalTimer;
 
-  private constructor(
+  constructor(
     private app: App,
-    public timer: IntervalTimer,
-  ) {}
-
-  static async create(app: App): Promise<JobRunner> {
-    const timer = await JobRunner.getTimer(app);
-    const runner = new JobRunner(app, timer);
-    cacheProvider.addObserver(runner);
-    return runner;
+    periodicJobIntervalSec: number,
+  ) {
+    this.timer = JobRunner.getTimer(periodicJobIntervalSec);
   }
 
-  private async reload() {
-    this.timer = await JobRunner.getTimer(this.app);
-  }
-
-  private static async getTimer(app: App): Promise<IntervalTimer> {
-    const config = (await cacheProvider.get(app)).config;
-    const intervalMs = config.periodicJobIntervalSec * 1000;
+  private static getTimer(periodicJobIntervalSec: number): IntervalTimer {
+    const intervalMs = periodicJobIntervalSec * 1000;
 
     // Round down to the preceding multiple of intervalMs. This ensures that,
     // if the interval is one hour (for example), the intervals are aligned to
@@ -60,15 +49,6 @@ class JobRunner {
         console.log("(err)");
       }
     }
-
-    if (this.reloadPending) {
-      await this.reload();
-      this.reloadPending = false;
-    }
-  }
-
-  onConfigCacheReload() {
-    this.reloadPending = true;
   }
 }
 
