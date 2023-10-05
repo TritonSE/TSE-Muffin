@@ -1,52 +1,84 @@
-import { App } from "@slack/bolt";
-import { DateTime } from "luxon";
+import { DateTime, Duration } from "luxon";
 
-import { Config } from "../models/ConfigModel";
 import { Round, RoundDocument, RoundModel } from "../models/RoundModel";
 import { Result } from "../util/result";
 
-import { cacheProvider } from "./config-cache";
-
-async function createRound(
-  app: App,
+async function repeatRound(
   channel: string,
-  startDate: DateTime,
 ): Promise<Result<RoundDocument, string>> {
-  const config = (await cacheProvider.get(app)).config;
+  let prevRound: RoundDocument | null;
+  try {
+    prevRound = await RoundModel.findOne({ channel }, null, {
+      sort: { matchingScheduledFor: -1 },
+    });
+  } catch (e) {
+    console.error(e);
+    return Result.err(
+      "unknown error occurred while querying most recent round for channel (check logs)",
+    );
+  }
 
-  // Calculate the scheduled date for a particular event.
-  // This lambda is really ugly, but duplicating this three times was uglier.
-  const calculateScheduled = <K extends keyof Config & `${string}Factor`>(
-    factor: K,
-  ) =>
-    startDate
-      .plus({ days: config.roundDurationDays * config[factor] })
-      .toJSDate();
+  if (prevRound === null) {
+    return Result.err(
+      "cannot repeat round because no previous round exists in this channel",
+    );
+  }
 
-  const reminderMessageScheduledFor = calculateScheduled(
-    "reminderMessageDelayFactor",
-  );
-  const finalMessageScheduledFor = calculateScheduled(
-    "finalMessageDelayFactor",
-  );
-  const summaryMessageScheduledFor = calculateScheduled(
-    "summaryMessageDelayFactor",
-  );
+  const shiftDuration = { seconds: prevRound.durationSec };
+  const shiftDate = (date: Date) =>
+    DateTime.fromJSDate(date).plus(shiftDuration).toJSDate();
+
+  const matchingScheduledFor = shiftDate(prevRound.matchingScheduledFor);
+  if (matchingScheduledFor.getTime() < Date.now()) {
+    return Result.err(
+      "cannot repeat round because the repeated round would have started already",
+    );
+  }
 
   const rawRound: Round = {
     channel,
-    matchingScheduledFor: startDate.toJSDate(),
+    durationSec: prevRound.durationSec,
+    matchingScheduledFor,
     matchingCompleted: false,
     allInitialMessagesSent: false,
-    reminderMessageScheduledFor,
+    reminderMessageScheduledFor: shiftDate(
+      prevRound.reminderMessageScheduledFor,
+    ),
     allReminderMessagesSent: false,
-    finalMessageScheduledFor,
+    finalMessageScheduledFor: shiftDate(prevRound.finalMessageScheduledFor),
     allFinalMessagesSent: false,
-    summaryMessageScheduledFor,
+    summaryMessageScheduledFor: shiftDate(prevRound.summaryMessageScheduledFor),
   };
 
   const round = await RoundModel.create(rawRound);
   return Result.ok(round);
 }
 
-export { createRound };
+async function createRound(
+  channel: string,
+  startDate: DateTime,
+  duration: Duration,
+  reminderMessageDelay: Duration,
+  finalMessageDelay: Duration,
+  summaryMessageDelay: Duration,
+): Promise<Result<RoundDocument, string>> {
+  const rawRound: Round = {
+    channel,
+    durationSec: duration.shiftTo("seconds").seconds,
+    matchingScheduledFor: startDate.toJSDate(),
+    matchingCompleted: false,
+    allInitialMessagesSent: false,
+    reminderMessageScheduledFor: startDate
+      .plus(reminderMessageDelay)
+      .toJSDate(),
+    allReminderMessagesSent: false,
+    finalMessageScheduledFor: startDate.plus(finalMessageDelay).toJSDate(),
+    allFinalMessagesSent: false,
+    summaryMessageScheduledFor: startDate.plus(summaryMessageDelay).toJSDate(),
+  };
+
+  const round = await RoundModel.create(rawRound);
+  return Result.ok(round);
+}
+
+export { createRound, repeatRound };
