@@ -2,7 +2,6 @@ import { App, SlackEventMiddlewareArgs } from "@slack/bolt";
 import { DateTime, Duration } from "luxon";
 
 import { onReactionAddedToMessage } from "../handlers/reaction";
-import { cacheProvider } from "../services/config-cache";
 import { createRound, repeatRound } from "../services/round";
 import {
   addReactions,
@@ -200,20 +199,6 @@ class ReactSimulateCommand extends Command {
   }
 }
 
-class ReloadConfigCommand extends Command {
-  static readonly privileged = true;
-  static readonly id = "reload_config";
-  static readonly help = [
-    "",
-    "reload the config from the database (developer use only)",
-  ];
-
-  async run() {
-    await cacheProvider.reload(this.app);
-    return Result.ok(undefined);
-  }
-}
-
 class RoundRepeatCommand extends Command {
   static readonly privileged = true;
   static readonly id = "round_repeat";
@@ -395,7 +380,6 @@ const commandClasses = [
   LsCommand,
   ReactCommand,
   ReactSimulateCommand,
-  ReloadConfigCommand,
   RoundRepeatCommand,
   RoundScheduleCommand,
   SendDirectMessageCommand,

@@ -1,11 +1,11 @@
 import { App } from "@slack/bolt";
 import mongoose from "mongoose";
 
+import env from "../env";
 import { GroupModel } from "../models/GroupModel";
 import { RoundDocument } from "../models/RoundModel";
 import { Result } from "../util/result";
 
-import { cacheProvider } from "./config-cache";
 import { getConversationMembers } from "./slack";
 
 /**
@@ -22,8 +22,9 @@ async function getUsersToMatch(
   }
 
   // Ensure that we don't pair anyone with this bot.
-  const botUserId = (await cacheProvider.get(app)).botUserId;
-  const filtered = getMembersResult.value.filter((user) => user !== botUserId);
+  const filtered = getMembersResult.value.filter(
+    (user) => user !== env.BOT_USER_ID,
+  );
 
   return Result.ok(filtered);
 }

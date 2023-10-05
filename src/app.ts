@@ -6,8 +6,7 @@ import mongoose from "mongoose";
 import env from "./env";
 import { onReactionAddedToMessage } from "./handlers/reaction";
 import { JobRunner } from "./jobs/runner";
-import { cacheProvider } from "./services/config-cache";
-import { addReaction, getUserInfo } from "./services/slack";
+import { addReaction, getBotUserId, getUserInfo } from "./services/slack";
 import { CommandContext, runCommand } from "./shell/commands";
 import { shell } from "./shell/shell";
 import { formatUser } from "./util/formatting";
@@ -75,8 +74,7 @@ app.event("reaction_added", async (context) => {
 
 app.event("app_mention", async (context) => {
   // Only respond to messages that start with a mention.
-  const botUserId = (await cacheProvider.get(app)).botUserId;
-  const botMention = formatUser(botUserId);
+  const botMention = formatUser(env.BOT_USER_ID);
   let text = context.event.text.trimStart();
   if (!text.startsWith(botMention)) {
     // TODO: use postEphemeral to send a hint to the user?
@@ -102,25 +100,26 @@ app.message(async (context) => {
 });
 
 async function main() {
+  console.log(env);
+
   console.log("connecting to MongoDB...");
   await mongoose.connect(env.MONGODB_URI);
   console.log("connected to MongoDB!");
 
-  console.log(`starting Bolt app on port: ${env.PORT}`);
+  console.log(`starting Bolt app...`);
   await app.start();
   console.log("started Bolt app!");
 
-  try {
-    await cacheProvider.get(app);
-  } catch (e) {
-    const message = "failed to initialize config cache";
-    console.error(`${message}: stopping Bolt app...`);
-    await app.stop();
-
-    throw new Error(message, { cause: e });
+  const botUserIdResult = await getBotUserId(app);
+  if (botUserIdResult.ok) {
+    const botUserId = botUserIdResult.value;
+    (env as { BOT_USER_ID: string }).BOT_USER_ID = botUserId;
+    console.log(`bot user ID: ${botUserId}`);
+  } else {
+    throw new Error(botUserIdResult.error);
   }
 
-  const runner = await JobRunner.create(app);
+  const runner = new JobRunner(app, env.PERIODIC_JOB_INTERVAL_SEC);
   await runner.run();
 
   shell(app).catch(console.error);
