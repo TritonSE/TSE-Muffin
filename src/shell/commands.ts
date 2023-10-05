@@ -1,11 +1,9 @@
 import { App, SlackEventMiddlewareArgs } from "@slack/bolt";
-import { DateTime } from "luxon";
+import { DateTime, Duration } from "luxon";
 
 import { onReactionAddedToMessage } from "../handlers/reaction";
-import { ConfigDocument } from "../models/ConfigModel";
-import { RoundDocument, RoundModel } from "../models/RoundModel";
 import { cacheProvider } from "../services/config-cache";
-import { createRound } from "../services/round";
+import { createRound, repeatRound } from "../services/round";
 import {
   addReactions,
   editMessage,
@@ -17,6 +15,7 @@ import {
   formatChannel,
   parseChannel,
   parseDate,
+  parseDuration,
   parseEmoji,
   parseUser,
 } from "../util/formatting";
@@ -215,56 +214,43 @@ class ReloadConfigCommand extends Command {
   }
 }
 
+class RoundRepeatCommand extends Command {
+  static readonly privileged = true;
+  static readonly id = "round_repeat";
+  static readonly help = [
+    "CHANNEL",
+    "schedule a new round by repeating the last round in CHANNEL",
+  ];
+
+  async run() {
+    if (this.args.length !== 1) {
+      return usageErr(RoundRepeatCommand);
+    }
+
+    const channel = parseChannel(this.args[0]);
+    const repeatRoundResult = await repeatRound(channel);
+    if (!repeatRoundResult.ok) {
+      return repeatRoundResult;
+    }
+
+    return Result.ok(repeatRoundResult.value._id.toString());
+  }
+}
+
 class RoundScheduleCommand extends Command {
   static readonly privileged = true;
   static readonly id = "round_schedule";
   static readonly help = [
-    "CHANNEL [DATE]",
-    "schedule a new round of matches for the users in CHANNEL, which will start on DATE (defaults to the end of the previous round)",
+    "CHANNEL DATE DURATION [REMINDER_DELAY FINAL_DELAY SUMMARY_DELAY]",
+    "schedule a new round of matches for the users in CHANNEL, which will start on DATE and last for DURATION",
   ];
 
   /**
    * @returns Ok with the start date to use, or Err with an error message.
    */
   async determineStartDate(
-    channel: string,
-    startDateArg: string | undefined,
-    config: ConfigDocument,
+    startDateArg: string,
   ): Promise<Result<DateTime, string>> {
-    if (startDateArg === undefined) {
-      // Get the most recent round in this channel.
-      let round: RoundDocument | null;
-      try {
-        round = await RoundModel.findOne({ channel }, null, {
-          sort: { matchingScheduledFor: -1 },
-        });
-      } catch (e) {
-        console.error(e);
-        return Result.err(
-          "unknown error occurred while querying most recent round for channel (check logs)",
-        );
-      }
-
-      if (round === null) {
-        return Result.err(
-          "start date not provided, and it is required because there are no previous rounds for this channel",
-        );
-      }
-
-      // The new round starts when the previous round ends.
-      const startDate = DateTime.fromJSDate(round.matchingScheduledFor).plus({
-        days: config.roundDurationDays,
-      });
-
-      if (startDate.toMillis() < Date.now()) {
-        return Result.err(
-          "start date not provided, and it is required because the previous round in this channel already ended",
-        );
-      }
-
-      return Result.ok(startDate);
-    }
-
     const parseResult = parseDate(startDateArg);
     if (!parseResult.ok) {
       return Result.err(`failed to parse start date: ${parseResult.error}`);
@@ -278,26 +264,72 @@ class RoundScheduleCommand extends Command {
   }
 
   async run() {
-    if (this.args.length !== 1 && this.args.length !== 2) {
+    if (this.args.length < 3 || this.args.length > 6) {
       return usageErr(RoundScheduleCommand);
     }
 
-    const [rawChannel, startDateArg] = this.args;
+    const [
+      rawChannel,
+      startDateArg,
+      durationArg,
+      reminderMessageDelayArg,
+      finalMessageDelayArg,
+      summaryMessageDelayArg,
+    ] = this.args;
     const channel = parseChannel(rawChannel);
 
-    const config = (await cacheProvider.get(this.app)).config;
-
-    const startDateResult = await this.determineStartDate(
-      channel,
-      startDateArg,
-      config,
-    );
+    const startDateResult = await this.determineStartDate(startDateArg);
     if (!startDateResult.ok) {
       return startDateResult;
     }
-    const startDate = startDateResult.value;
 
-    const createRoundResult = await createRound(this.app, channel, startDate);
+    const durationResult = parseDuration(durationArg);
+    if (!durationResult.ok) {
+      return durationResult;
+    }
+    const duration = durationResult.value;
+
+    const getDelayResult = (
+      input: string | undefined,
+      defaultDelayFactor: number,
+    ) =>
+      input
+        ? parseDuration(input)
+        : Result.ok(
+            Duration.fromObject({
+              seconds: defaultDelayFactor * duration.shiftTo("seconds").seconds,
+            }),
+          );
+
+    const reminderMessageDelayResult = getDelayResult(
+      reminderMessageDelayArg,
+      0.5,
+    );
+    if (!reminderMessageDelayResult.ok) {
+      return reminderMessageDelayResult;
+    }
+
+    const finalMessageDelayResult = getDelayResult(finalMessageDelayArg, 1.0);
+    if (!finalMessageDelayResult.ok) {
+      return finalMessageDelayResult;
+    }
+
+    const summaryMessageDelayResult = getDelayResult(
+      summaryMessageDelayArg,
+      16 / 14,
+    );
+    if (!summaryMessageDelayResult.ok) {
+      return summaryMessageDelayResult;
+    }
+
+    const createRoundResult = await createRound(
+      channel,
+      startDateResult.value,
+      duration,
+      reminderMessageDelayResult.value,
+      finalMessageDelayResult.value,
+      summaryMessageDelayResult.value,
+    );
     if (!createRoundResult.ok) {
       return createRoundResult;
     }
@@ -364,6 +396,7 @@ const commandClasses = [
   ReactCommand,
   ReactSimulateCommand,
   ReloadConfigCommand,
+  RoundRepeatCommand,
   RoundScheduleCommand,
   SendDirectMessageCommand,
   SendMessageCommand,

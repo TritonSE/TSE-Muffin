@@ -11,9 +11,15 @@ async function shell(app: App) {
   const rl = readline.createInterface(stdin, stdout);
 
   const promptSuffix = "muffin> ";
-  const setBlankPrompt = () => rl.setPrompt(promptSuffix);
-  const setOkPrompt = () => rl.setPrompt("(ok) " + promptSuffix);
-  const setErrPrompt = () => rl.setPrompt("(err) " + promptSuffix);
+  const setBlankPrompt = () => {
+    rl.setPrompt(promptSuffix);
+  };
+  const setOkPrompt = () => {
+    rl.setPrompt("(ok) " + promptSuffix);
+  };
+  const setErrPrompt = () => {
+    rl.setPrompt("(err) " + promptSuffix);
+  };
 
   setBlankPrompt();
 

@@ -5,6 +5,12 @@ interface Round {
   channel: string;
 
   /**
+   * How long does this round last? Used to recalculate the other date fields
+   * when repeating a round.
+   */
+  durationSec: number;
+
+  /**
    * When to match users into groups and send the initial message for each
    * group.
    */
@@ -38,6 +44,11 @@ interface Round {
 const RoundSchema = new Schema<Round>({
   channel: {
     type: String,
+    required: true,
+    immutable: true,
+  },
+  durationSec: {
+    type: Number,
     required: true,
     immutable: true,
   },
