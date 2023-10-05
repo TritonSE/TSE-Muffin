@@ -47,9 +47,11 @@ If you send muffin the word "help" as a direct message, it should react to your 
 To schedule pairings, use the following command:
 
 ```
-round_schedule #my-channel 2023-06-05T10:00:00-0700
+round_schedule #my-channel 2023-06-05T10:00:00-0700 2w
 ```
 
 Everyone in that channel will be paired up at the specified date and time. This is an ISO 8601 date string; be sure to replace `-0700` with the offset of your time zone.
+
+`2w` specifies a duration of two weeks. Also try days (`4d`) or even hours and minutes (`1h10m`).
 
 You can repeat this command with different dates (and even channels) to schedule as many rounds as you like. If you omit the date, muffin will schedule a round that starts after the previous round ends.
