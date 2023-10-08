@@ -1,5 +1,7 @@
 import { DateTime, Duration } from "luxon";
+import { Types } from "mongoose";
 
+import { GroupModel } from "../models/GroupModel";
 import { Round, RoundDocument, RoundModel } from "../models/RoundModel";
 import { Result } from "../util/result";
 
@@ -81,4 +83,29 @@ async function createRound(
   return Result.ok(round);
 }
 
-export { createRound, repeatRound };
+async function listRounds(cutoff?: DateTime): Promise<RoundDocument[]> {
+  const filter =
+    cutoff === undefined
+      ? {}
+      : {
+          summaryMessageScheduledFor: { $gt: cutoff.toJSDate() },
+        };
+
+  return RoundModel.find(filter).sort({
+    summaryMessageScheduledFor: 1,
+  });
+}
+
+async function deleteRound(id: string): Promise<RoundDocument | null> {
+  const deleted = await RoundModel.findOneAndDelete({
+    _id: new Types.ObjectId(id),
+  });
+
+  if (deleted !== null) {
+    await GroupModel.deleteMany({ round: deleted._id });
+  }
+
+  return deleted;
+}
+
+export { createRound, repeatRound, listRounds, deleteRound };

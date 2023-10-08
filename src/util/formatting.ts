@@ -1,5 +1,7 @@
 import { DateTime, Duration } from "luxon";
 
+import { RoundDocument } from "../models/RoundModel";
+
 import { Result } from "./result";
 
 function formatChannel(channel: string): string {
@@ -43,6 +45,15 @@ function parseInteger(value: string): Result<number, string> {
     return Result.err("value cannot be parsed as integer");
   }
   return Result.ok(parsed);
+}
+
+function formatDuration(duration: Duration): string {
+  const units = ["weeks", "days", "hours", "minutes", "seconds"] as const;
+  const shifted = duration.shiftTo(...units);
+  const entries = units
+    .map((unit) => [unit, shifted[unit]] as const)
+    .filter(([_, value]) => value > 0);
+  return entries.map(([unit, value]) => `${value}${unit[0]}`).join("");
 }
 
 function parseDuration(duration: string): Result<Duration, string> {
@@ -93,6 +104,25 @@ function parseDuration(duration: string): Result<Duration, string> {
   return Result.ok(Duration.fromObject(durationObject));
 }
 
+function formatRound(round: RoundDocument): string {
+  const startDate = DateTime.fromJSDate(round.matchingScheduledFor);
+  return [
+    round._id.toHexString(),
+    formatChannel(round.channel),
+    round.matchingScheduledFor.toISOString(),
+    formatDuration(Duration.fromObject({ seconds: round.durationSec })),
+    formatDuration(
+      DateTime.fromJSDate(round.reminderMessageScheduledFor).diff(startDate),
+    ),
+    formatDuration(
+      DateTime.fromJSDate(round.finalMessageScheduledFor).diff(startDate),
+    ),
+    formatDuration(
+      DateTime.fromJSDate(round.summaryMessageScheduledFor).diff(startDate),
+    ),
+  ].join(" ");
+}
+
 export {
   formatChannel,
   parseChannel,
@@ -101,5 +131,7 @@ export {
   formatUser,
   parseUser,
   parseDate,
+  formatDuration,
   parseDuration,
+  formatRound,
 };

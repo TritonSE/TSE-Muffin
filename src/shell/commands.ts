@@ -2,7 +2,12 @@ import { App, SlackEventMiddlewareArgs } from "@slack/bolt";
 import { DateTime, Duration } from "luxon";
 
 import { onReactionAddedToMessage } from "../handlers/reaction";
-import { createRound, repeatRound } from "../services/round";
+import {
+  createRound,
+  deleteRound,
+  listRounds,
+  repeatRound,
+} from "../services/round";
 import {
   addReactions,
   editMessage,
@@ -12,6 +17,7 @@ import {
 } from "../services/slack";
 import {
   formatChannel,
+  formatRound,
   parseChannel,
   parseDate,
   parseDuration,
@@ -199,6 +205,42 @@ class ReactSimulateCommand extends Command {
   }
 }
 
+class RoundDeleteCommand extends Command {
+  static readonly privileged = true;
+  static readonly id = "round_delete";
+  static readonly help = ["ID", "delete a round"];
+
+  async run() {
+    if (this.args.length !== 1) {
+      return usageErr(RoundDeleteCommand);
+    }
+
+    const roundId = this.args[0];
+    const deleted = await deleteRound(roundId);
+    if (deleted === null) {
+      return Result.err(`no round with ID: ${roundId}`);
+    } else {
+      return Result.ok(`deleted: ${formatRound(deleted)}`);
+    }
+  }
+}
+
+class RoundListCommand extends Command {
+  static readonly privileged = true;
+  static readonly id = "round_list";
+  static readonly help = ["", "list all rounds"];
+
+  async run() {
+    if (this.args.length !== 0) {
+      return usageErr(RoundListCommand);
+    }
+
+    return Result.ok(
+      (await listRounds()).map((round) => formatRound(round)).join("\n"),
+    );
+  }
+}
+
 class RoundRepeatCommand extends Command {
   static readonly privileged = true;
   static readonly id = "round_repeat";
@@ -380,6 +422,8 @@ const commandClasses = [
   LsCommand,
   ReactCommand,
   ReactSimulateCommand,
+  RoundDeleteCommand,
+  RoundListCommand,
   RoundRepeatCommand,
   RoundScheduleCommand,
   SendDirectMessageCommand,
