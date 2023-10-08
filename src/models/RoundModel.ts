@@ -103,6 +103,9 @@ const indexes: { [K in keyof Round]?: 1 }[] = [
   // Used to get the most recent round in a channel, to determine the start date
   // when scheduling the next round.
   { channel: 1, matchingScheduledFor: 1 },
+
+  // Used to list rounds chronologically.
+  { summaryMessageScheduledFor: 1 },
 ];
 indexes.forEach((index) => RoundSchema.index(index));
 

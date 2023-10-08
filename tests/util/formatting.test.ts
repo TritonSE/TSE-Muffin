@@ -1,7 +1,7 @@
 import { describe, expect, test } from "@jest/globals";
 import { Duration } from "luxon";
 
-import { parseDuration } from "../../src/util/formatting";
+import { formatDuration, parseDuration } from "../../src/util/formatting";
 import { Result } from "../../src/util/result";
 
 describe("parseDuration", () => {
@@ -11,31 +11,19 @@ describe("parseDuration", () => {
     );
   });
 
-  test("days only", () => {
-    const result = parseDuration("53d");
-    expect(result.ok ? result.value.toISO() : null).toStrictEqual(
-      Duration.fromObject({ days: 53 }).toISO(),
+  test.each([
+    ["5d", { days: 5 }],
+    ["3h4m", { hours: 3, minutes: 4 }],
+    ["1w5d12h9m6s", { weeks: 1, days: 5, hours: 12, minutes: 9, seconds: 6 }],
+  ])("round-trip %s to %j", (str: string, obj: Record<string, number>) => {
+    const parseResult = parseDuration(str);
+    if (!parseResult.ok) {
+      throw new Error("failed to parse");
+    }
+    expect(parseResult.value.toISO()).toStrictEqual(
+      Duration.fromObject(obj).toISO(),
     );
-  });
-
-  test("hours and minutes only", () => {
-    const result = parseDuration("3h4m");
-    expect(result.ok ? result.value.toISO() : null).toStrictEqual(
-      Duration.fromObject({ hours: 3, minutes: 4 }).toISO(),
-    );
-  });
-
-  test("all fields", () => {
-    const result = parseDuration("1w15d12h9m6s");
-    expect(result.ok ? result.value.toISO() : null).toStrictEqual(
-      Duration.fromObject({
-        weeks: 1,
-        days: 15,
-        hours: 12,
-        minutes: 9,
-        seconds: 6,
-      }).toISO(),
-    );
+    expect(formatDuration(parseResult.value)).toStrictEqual(str);
   });
 
   test("wrong formats", () => {
