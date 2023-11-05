@@ -2,7 +2,7 @@ import { App } from "@slack/bolt";
 import mongoose from "mongoose";
 
 import env from "../env";
-import { GroupModel } from "../models/GroupModel";
+import { Group, GroupModel } from "../models/GroupModel";
 import { RoundDocument } from "../models/RoundModel";
 import { Result } from "../util/result";
 
@@ -29,6 +29,12 @@ async function getUsersToMatch(
   return Result.ok(filtered);
 }
 
+async function getPreviousPairings(channel: string): Promise<Group[]> {
+  return GroupModel.find({ channel: channel })
+    .sort({ initialMessageTimestamp: -1 })
+    .limit(50);
+}
+
 /**
  * @returns A shuffled shallow copy of the input array.
  */
@@ -51,8 +57,43 @@ function shuffled<T>(values: T[]): T[] {
  * Pair users randomly, including a group of three if there is an odd number, or
  * a group of one if there is only one user.
  */
-function makeGroups(users: string[]): string[][] {
+function makeGroups(users: string[], prevGroups: Group[]): string[][] {
+  if (users.length === 0) {
+    return [];
+  } else if (users.length <= 3) {
+    return [users];
+  }
+
   users = shuffled(users);
+
+  // Attempt to avoid pairing users who have been paired previously.
+
+  const prevPairs = new Set<string>();
+  for (const group of prevGroups) {
+    for (let i = 0; i < group.userIds.length; i++) {
+      for (let j = 0; j < group.userIds.length; j++) {
+        if (i != j) {
+          prevPairs.add(group.userIds[i] + group.userIds[j]);
+        }
+      }
+    }
+  }
+
+  for (let iteration = 0; iteration < 20; iteration++) {
+    // Iterate over all pairs. There might be one extra person at the end, who
+    // becomes part of a group of three, but we ignore them for simplicity.
+    for (let i = 0; i + 1 < users.length; i += 2) {
+      if (prevPairs.has(users[i] + users[i + 1])) {
+        // Users have been paired before - swap one of them with someone else.
+        const src = i + Math.floor(Math.random() * 2);
+        const dest = Math.floor(Math.random() * users.length);
+
+        const temp = users[src];
+        users[src] = users[dest];
+        users[dest] = temp;
+      }
+    }
+  }
 
   const groups: string[][] = [];
 
@@ -65,13 +106,8 @@ function makeGroups(users: string[]): string[][] {
 
   // Is there an unpaired person?
   if (i < users.length) {
-    if (groups.length === 0) {
-      // Only one person - put them in a group by themself.
-      groups.push([users[i]]);
-    } else {
-      // Add the person to the first group.
-      groups[0].push(users[i]);
-    }
+    // Add the person to the first group.
+    groups[0].push(users[i]);
   }
 
   return groups;
@@ -90,7 +126,10 @@ async function createGroups(
     return Result.err(`could not get users to match: ${usersResult.error}`);
   }
 
-  const groups = makeGroups(usersResult.value);
+  const groups = makeGroups(
+    usersResult.value,
+    await getPreviousPairings(round.channel),
+  );
 
   await mongoose.connection.transaction(async () => {
     await GroupModel.insertMany(
