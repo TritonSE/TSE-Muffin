@@ -32,7 +32,7 @@ async function getUsersToMatch(
 async function getPreviousPairings(channel: string): Promise<Group[]> {
   return GroupModel.find({ channel: channel })
     .sort({ initialMessageTimestamp: -1 })
-    .limit(50);
+    .limit(150);
 }
 
 /**
@@ -79,7 +79,7 @@ function makeGroups(users: string[], prevGroups: Group[]): string[][] {
     }
   }
 
-  for (let iteration = 0; iteration < 20; iteration++) {
+  for (let iteration = 0; iteration < 50; iteration++) {
     // Iterate over all pairs. There might be one extra person at the end, who
     // becomes part of a group of three, but we ignore them for simplicity.
     for (let i = 0; i + 1 < users.length; i += 2) {
